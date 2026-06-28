@@ -1,0 +1,2398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Accomplishment Report Automation</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #f0f2f5; min-height: 100vh; }
+
+  .app-header {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+    color: #fff; padding: 20px 36px; display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 3px solid #3b82f6;
+    box-shadow: 0 2px 10px rgba(30,58,138,0.18);
+  }
+  .app-header-left { display: flex; align-items: center; gap: 14px; }
+  .app-header-icon {
+    width: 40px; height: 40px; background: rgba(255,255,255,0.12); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; font-size: 20px;
+  }
+  .app-header h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+  .app-header-sub { font-size: 12px; color: #93c5fd; margin-top: 2px; font-weight: 400; letter-spacing: 0.04em; text-transform: uppercase; }
+  .app-header-badge { font-size: 11px; color: #bfdbfe; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; font-weight: 500; }
+
+  .tabs { display: flex; gap: 2px; padding: 0 36px; background: #1e3a8a; border-bottom: none; }
+  .tab-btn { border: none; cursor: pointer; padding: 12px 22px; font-size: 13px; font-weight: 600; border-radius: 0; transition: all 0.15s; letter-spacing: 0.03em; }
+  .tab-btn.active { background: #f0f2f5; color: #1a56db; border-bottom: 3px solid #3b82f6; }
+  .tab-btn.inactive { background: transparent; color: #93c5fd; border-bottom: 3px solid transparent; }
+  .tab-btn.inactive:hover { background: rgba(255,255,255,0.08); color: #fff; }
+
+  .main { padding: 24px 32px; max-width: 980px; margin: 0 auto; }
+
+  .card { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); padding: 24px; margin-bottom: 18px; }
+  .card-title { font-weight: 700; font-size: 15px; color: #1e3a8a; margin-bottom: 16px; }
+  .card-subtitle { color: #64748b; font-size: 13px; margin-bottom: 16px; }
+  .section-divider { border: none; border-top: 1px solid #e2e8f0; margin: 18px 0 14px; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+
+  label.lbl { font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; display: block; }
+  input[type="text"], input[type="date"], select, textarea {
+    width: 100%; border: 1.5px solid #cbd5e1; border-radius: 6px;
+    padding: 8px 12px; font-size: 14px; outline: none;
+    transition: border 0.15s; font-family: Arial, sans-serif;
+  }
+  input:focus, select:focus, textarea:focus { border-color: #1a56db; }
+  textarea { resize: vertical; }
+  .date-preview { font-size: 12px; color: #1a56db; margin-top: 3px; }
+
+  .btn { padding: 9px 20px; border-radius: 7px; border: none; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.15s; }
+  .btn-primary { background: #1a56db; color: #fff; }
+  .btn-primary:hover { background: #1e40af; }
+  .btn-success { background: #059669; color: #fff; }
+  .btn-success:hover { background: #047857; }
+  .btn-danger { background: #dc2626; color: #fff; }
+  .btn-danger:hover { background: #b91c1c; }
+  .btn-ghost { background: #f1f5f9; color: #475569; }
+  .btn-ghost:hover { background: #e2e8f0; }
+  .btn-sat { background: #7c3aed; color: #fff; }
+  .btn-sat:hover { background: #6d28d9; }
+
+  /* DAY CARDS */
+  .day-card { border: 1.5px solid #e2e8f0; border-radius: 8px; margin-bottom: 14px; overflow: hidden; background: #fafbfc; }
+  .day-card-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 16px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0;
+  }
+  .day-card-header.saturday { background: #ede9fe; border-bottom-color: #c4b5fd; }
+  .day-card-header.absent { background: #fef3c7; border-bottom-color: #fcd34d; }
+  .day-card-header.holiday { background: #f3e8ff; border-bottom-color: #d8b4fe; }
+  .day-card-header.wellness { background: #d1fae5; border-bottom-color: #6ee7b7; }
+  .day-label { font-weight: 700; color: #1e3a8a; font-size: 14px; }
+  .day-label.saturday { color: #6d28d9; }
+  .day-card-body { padding: 14px 16px; }
+  .day-type-row { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .type-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 16px; border-radius: 6px; font-size: 12px; font-weight: 600;
+    border: 1.5px solid #cbd5e1; cursor: pointer; transition: all 0.18s;
+    background: #f8fafc; color: #64748b; letter-spacing: 0.03em;
+    user-select: none;
+  }
+  .type-chip:hover { filter: brightness(0.97); }
+  .type-chip .chip-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    background: currentColor; opacity: 0.4; transition: opacity 0.18s;
+  }
+  .type-chip.regular.selected {
+    background: #1a56db; color: #fff; border-color: #1a56db;
+    box-shadow: 0 2px 8px rgba(26,86,219,0.25);
+  }
+  .type-chip.absent.selected {
+    background: #d97706; color: #fff; border-color: #d97706;
+    box-shadow: 0 2px 8px rgba(217,119,6,0.25);
+  }
+  .type-chip.holiday.selected {
+    background: #7c3aed; color: #fff; border-color: #7c3aed;
+    box-shadow: 0 2px 8px rgba(124,58,237,0.25);
+  }
+  .type-chip.wellness.selected {
+    background: #059669; color: #fff; border-color: #059669;
+    box-shadow: 0 2px 8px rgba(5,150,105,0.25);
+  }
+  .leave-subtype {
+    display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;
+  }
+  .leave-sub-chip {
+    padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;
+    border:2px solid #d1fae5;background:#f0fdf4;color:#065f46;transition:all 0.15s;
+  }
+  .leave-sub-chip.selected { background:#059669;color:#fff;border-color:#059669; }
+  .type-chip.selected .chip-dot { opacity: 1; background: rgba(255,255,255,0.6); }
+
+  /* ACCOMPLISHMENT TEXTAREA */
+  .acc-textarea {
+    width: 100%; border: 1.5px solid #cbd5e1; border-radius: 6px;
+    padding: 10px 12px; font-size: 14px; font-family: Arial, sans-serif;
+    outline: none; line-height: 2; background: #fff; resize: vertical;
+    min-height: 120px; transition: border 0.15s;
+    white-space: pre-wrap;
+  }
+  .acc-textarea:focus { border-color: #1a56db; }
+  .sat-add-btn { border: 2px dashed #c4b5fd; background: #faf5ff; border-radius: 8px; padding: 12px; text-align: center; color: #7c3aed; font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.15s; margin-bottom: 14px; }
+  .sat-add-btn:hover { background: #ede9fe; }
+
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; margin-left: 8px; }
+  .badge-blue { background: #dbeafe; color: #1e40af; }
+
+  .stat-card { border-radius: 8px; padding: 16px 18px; text-align: center; }
+  .stat-num { font-size: 32px; font-weight: 800; }
+  .stat-lbl { font-size: 12px; color: #475569; font-weight: 600; margin-top: 4px; }
+
+  .confirm-box { background: #fef2f2; border: 1.5px solid #fca5a5; border-radius: 8px; padding: 14px; margin-bottom: 14px; display: flex; align-items: center; gap: 12px; }
+  .confirm-box span { color: #dc2626; font-weight: 600; font-size: 14px; }
+
+  .row { display: flex; align-items: center; gap: 8px; }
+  .row-between { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+
+  /* SAVE SUCCESS TOAST */
+  .toast { position: fixed; bottom: 28px; right: 28px; background: #059669; color: #fff; padding: 12px 22px; border-radius: 10px; font-weight: 700; font-size: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.18); z-index: 9999; opacity: 0; transform: translateY(12px); transition: all 0.3s; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* DASHBOARD */
+  .dash-period-group { margin-bottom: 16px; }
+  .dash-period-title {
+    font-weight: 700; font-size: 14px; color: #fff; background: #1e3a8a;
+    padding: 10px 14px; border-radius: 7px; display: flex; justify-content: space-between;
+    align-items: center; cursor: pointer; user-select: none; transition: background 0.15s;
+  }
+  .dash-period-title:hover { background: #1e40af; }
+  .dash-period-title.open { border-radius: 7px 7px 0 0; }
+  .dash-period-chevron { font-size: 12px; transition: transform 0.2s; display: inline-block; margin-left: 10px; }
+  .dash-period-title.open .dash-period-chevron { transform: rotate(180deg); }
+  .dash-group-box { border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 7px 7px; overflow: hidden; display: none; }
+  .dash-group-box.open { display: block; }
+  .dash-entry { border-left: 4px solid #1a56db; padding: 10px 16px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+  .dash-entry:last-child { border-bottom: none; }
+  .dash-entry.absent { border-left-color: #f59e0b; background: #fffbeb; }
+  .dash-entry.holiday { border-left-color: #8b5cf6; background: #faf5ff; }
+  .dash-entry.wellness { border-left-color: #10b981; background: #f0fdf4; }
+  .dash-entry.saturday { border-left-color: #7c3aed; }
+  .dash-entry-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .dash-entry-date { font-weight: 700; color: #1e3a8a; font-size: 13px; }
+  .dash-entry-preview { font-size: 12px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 380px; margin-top: 2px; }
+  .dash-entry-text { margin-top: 8px; font-size: 13px; color: #334155; white-space: pre-wrap; line-height: 1.6; display: none; }
+  .dash-entry-text.expanded { display: block; }
+  .dash-entry-empty { color: #94a3b8; font-style: italic; }
+  .dash-entry-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .dash-btn { padding: 4px 12px; border-radius: 5px; border: 1.5px solid; cursor: pointer; font-size: 11px; font-weight: 600; transition: all 0.15s; white-space: nowrap; }
+  .dash-btn-expand { border-color: #1a56db; color: #1a56db; background: #eff6ff; }
+  .dash-btn-expand:hover { background: #dbeafe; }
+  .dash-btn-edit { border-color: #059669; color: #059669; background: #ecfdf5; }
+  .dash-btn-edit:hover { background: #d1fae5; }
+
+  .legend { display: flex; gap: 16px; margin-bottom: 14px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #475569; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 2px; }
+
+  #print-area { display: none; }
+  .employment-screen {
+    display: flex; align-items: center; justify-content: center;
+    min-height: calc(100vh - 64px); padding: 40px 20px;
+  }
+  .employment-chooser {
+    background: #fff; border-radius: 16px; box-shadow: 0 4px 32px rgba(30,58,138,0.10);
+    padding: 40px 36px; max-width: 560px; width: 100%; text-align: center;
+  }
+  .employment-chooser h2 { font-size: 20px; font-weight: 700; color: #1e3a8a; margin-bottom: 6px; }
+  .employment-chooser p { font-size: 13px; color: #64748b; margin-bottom: 28px; }
+  .employment-cards { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+  .employment-card {
+    flex: 1; min-width: 180px; padding: 24px 20px; border-radius: 12px;
+    border: 2px solid #e2e8f0; background: #f8fafc; cursor: pointer;
+    transition: all 0.15s; text-align: left;
+  }
+  .employment-card:hover { border-color: #1a56db; background: #eff6ff; transform: translateY(-2px); box-shadow: 0 4px 16px rgba(26,86,219,0.12); }
+  .employment-card-icon { font-size: 28px; margin-bottom: 10px; }
+  .employment-card-title { font-size: 15px; font-weight: 700; color: #1e3a8a; margin-bottom: 4px; }
+  .employment-card-desc { font-size: 12px; color: #64748b; line-height: 1.5; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  #tabs-wrapper { display: none; }
+
+
+  /* REPORT TYPE SELECTOR */
+  .report-type-selector { display: flex; gap: 14px; margin-bottom: 20px; }
+  .report-type-card {
+    flex: 1; border: 2px solid #e2e8f0; border-radius: 10px; padding: 16px 20px;
+    cursor: pointer; transition: all 0.18s; background: #f8fafc;
+    display: flex; align-items: center; gap: 14px;
+    user-select: none;
+  }
+  .report-type-card:hover { border-color: #93c5fd; background: #eff6ff; }
+  .report-type-card.active { border-color: #1a56db; background: #eff6ff; box-shadow: 0 2px 10px rgba(26,86,219,0.12); }
+  .report-type-card .rtc-icon { font-size: 26px; flex-shrink: 0; }
+  .report-type-card .rtc-text { display: flex; flex-direction: column; }
+  .report-type-card .rtc-title { font-weight: 700; font-size: 14px; color: #1e3a8a; margin-bottom: 3px; }
+  .report-type-card .rtc-sub { font-size: 12px; color: #64748b; }
+  .report-type-card.active .rtc-title { color: #1a56db; }
+
+  /* REPORT TYPE SECTIONS */
+  .report-section { display: none; }
+  .report-section.active { display: block; }
+
+  /* No saved reports placeholder */
+  .empty-dash { text-align: center; padding: 40px 20px; color: #94a3b8; }
+  .empty-dash div { font-size: 36px; margin-bottom: 10px; }
+  .empty-dash p { font-size: 14px; }
+
+  @media print {
+    body > *:not(#print-area) { display: none !important; }
+    #print-area {
+      display: block !important;
+      position: static;
+      width: 100%;
+      background: white;
+      padding: 0;
+      font-family: 'Bookman Old Style', Bookman, Georgia, serif;
+      font-size: 11pt;
+      color: #000;
+    }
+    @page { size: A4; margin: 1in; }
+    * { page-break-inside: auto !important; break-inside: auto !important; }
+    table { border-collapse: collapse; width: 100%; }
+    td, th { font-family: 'Bookman Old Style', Bookman, Georgia, serif; font-size: 11pt; }
+    .signatory-table { page-break-inside: avoid !important; break-inside: avoid !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div class="app-header-left">
+    <div class="app-header-icon">📋</div>
+    <div>
+      <h1>Accomplishment Report</h1>
+      <div class="app-header-sub">Automation System</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div class="app-header-badge" id="employment-badge" style="display:none;"></div>
+    <button id="btn-back-home" onclick="goHome()" style="display:none;font-size:12px;padding:5px 14px;border-radius:20px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.12);color:#fff;cursor:pointer;font-weight:500;">← Change Type</button>
+    <div class="app-header-badge">ICTS — Solutions Development Division</div>
+  </div>
+</div>
+
+<!-- Employment Type Landing Screen -->
+<div id="employment-screen" class="employment-screen">
+  <div class="employment-chooser">
+    <div style="font-size:36px;margin-bottom:12px;">📋</div>
+    <h2>Welcome to the Accomplishment Report System</h2>
+    <p>Please select your employment type to continue.</p>
+    <div class="employment-cards">
+      <div class="employment-card" onclick="selectEmploymentType('cos')">
+        <div class="employment-card-icon">📄</div>
+        <div class="employment-card-title">Contract of Service</div>
+        <div class="employment-card-desc">For personnel under a contract of service arrangement.</div>
+      </div>
+      <div class="employment-card" onclick="selectEmploymentType('regular')">
+        <div class="employment-card-icon">🏛️</div>
+        <div class="employment-card-title">Regular</div>
+        <div class="employment-card-desc">For regular government employees.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- App Content (tabs + main) — shown after selection -->
+<div id="tabs-wrapper">
+<div id="app-tabs" class="tabs">
+  <button class="tab-btn active" onclick="switchTab('entry')">Entry</button>
+  <button class="tab-btn inactive" onclick="switchTab('dashboard')">Dashboard</button>
+  <button class="tab-btn inactive" onclick="switchTab('preview')">Preview &amp; Print</button>
+</div>
+
+<div class="main">
+
+  <!-- ===== ENTRY TAB ===== -->
+  <div id="tab-entry" class="tab-content active">
+
+    <!-- Report Type Selector -->
+    <div class="card" style="margin-bottom:18px;">
+      <div class="card-title" style="margin-bottom:12px;">Select Report Type</div>
+      <div class="report-type-selector">
+        <div class="report-type-card" id="rtype-dar" onclick="switchReportType('dar')">
+          <div class="rtc-icon">📋</div>
+          <div class="rtc-text">
+            <div class="rtc-title">Daily Accomplishment Report</div>
+            <div class="rtc-sub">Log daily work outputs per period</div>
+          </div>
+        </div>
+        <div class="report-type-card" id="rtype-idlar" onclick="switchReportType('idlar')">
+          <div class="rtc-icon">🗂️</div>
+          <div class="rtc-text">
+            <div class="rtc-title">Individual Daily Log &amp; Accomplishment Report</div>
+            <div class="rtc-sub">WFH log with time in/out per day (Annex D)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DAR Section -->
+    <div class="report-section" id="section-dar">
+      <div class="card">
+        <div class="card-title">Report Information</div>
+        <div class="grid-2">
+          <div>
+            <label class="lbl">Name of Personnel</label>
+            <input type="text" id="info-name" value="Gian Alec Monillas" oninput="onNameChange()" />
+          </div>
+          <div>
+            <label class="lbl">Title / Position</label>
+            <input type="text" id="info-position" value="Technical Assistant I" oninput="onPositionChange()" />
+          </div>
+          <div>
+            <label class="lbl">Period</label>
+            <select id="info-period" onchange="onPeriodChange()">
+              <option value="">— Select Period —</option>
+            </select>
+          </div>
+          <div>
+            <label class="lbl">Division</label>
+            <input type="text" id="info-division" value="Solutions Development Division" oninput="onInfoChange()" />
+          </div>
+          <div>
+            <label class="lbl">Bureau/Office</label>
+            <input type="text" id="info-bureau" value="Information and Communications Technology Service" oninput="onInfoChange()" />
+          </div>
+        </div>
+        <hr class="section-divider" />
+        <div style="font-weight:700;font-size:13px;color:#475569;margin-bottom:12px;">Signatories</div>
+        <div class="grid-2">
+          <div>
+            <label class="lbl">Submitted By (Name)</label>
+            <input type="text" id="info-submittedBy" value="Gian Alec Monillas" oninput="onInfoChange()" />
+          </div>
+          <div>
+            <label class="lbl">Approved By (Name)</label>
+            <input type="text" id="info-approvedBy" value="Noel E. Reyes" oninput="onInfoChange()" />
+          </div>
+          <div>
+            <label class="lbl">Title / Position</label>
+            <input type="text" id="info-submittedTitle" value="Technical Assistant I" oninput="onInfoChange()" />
+          </div>
+          <div>
+            <label class="lbl">Title / Position</label>
+            <textarea id="info-approvedTitle" rows="2" oninput="onInfoChange()">Information Technology Officer III
+Information and Communications Technology Service - Solutions Development Division</textarea>
+          </div>
+          <div>
+            <label class="lbl">Date Submitted</label>
+            <input type="date" id="info-submittedDate" oninput="updateDatePreview('info-submittedDate','prev-submittedDate'); onInfoChange()" />
+            <div class="date-preview" id="prev-submittedDate"></div>
+          </div>
+          <div>
+            <label class="lbl">Date Approved</label>
+            <input type="date" id="info-approvedDate" oninput="updateDatePreview('info-approvedDate','prev-approvedDate'); onInfoChange()" />
+            <div class="date-preview" id="prev-approvedDate"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="row-between">
+          <div class="card-title" style="margin-bottom:0;">Daily Accomplishments</div>
+          <div class="row">
+            <button class="btn btn-danger" onclick="confirmClear()">🗑 Clear All Entries</button>
+          </div>
+        </div>
+        <div style="font-size:13px;color:#64748b;margin-bottom:14px;">Workdays for the selected period are laid out below. Mark each day, then save.</div>
+
+        <div id="confirm-clear" class="confirm-box" style="display:none;margin-top:4px;">
+          <span>⚠️ Clear all entries for this period?</span>
+          <button class="btn btn-danger" style="padding:6px 14px;" onclick="clearAllEntries()">Yes, Clear</button>
+          <button class="btn btn-ghost" style="padding:6px 14px;" onclick="document.getElementById('confirm-clear').style.display='none'">Cancel</button>
+        </div>
+
+        <div id="entries-container"></div>
+
+        <div style="margin-top:20px;padding-top:16px;border-top:1.5px solid #e2e8f0;display:flex;justify-content:flex-end;">
+          <button class="btn btn-success" style="padding:11px 32px;font-size:14px;letter-spacing:0.03em;" onclick="saveReport()">
+            💾&nbsp; Save Report
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- IDLAR Section -->
+    <div class="report-section" id="section-idlar">
+      <div class="card">
+        <div class="card-title">Individual Daily Log and Accomplishment Report (WFH)</div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div>
+            <label class="lbl">Name</label>
+            <input type="text" id="idlar-name" value="Gian Alec Monillas" oninput="idlarOnNameChange()" />
+          </div>
+          <div>
+            <label class="lbl">Position</label>
+            <input type="text" id="idlar-position" value="Technical Assistant I" oninput="idlarOnPositionChange()" />
+          </div>
+          <div>
+            <label class="lbl">Division</label>
+            <input type="text" id="idlar-division" value="Solutions Development Division" oninput="idlarOnChange()" />
+          </div>
+          <div>
+            <label class="lbl">Bureau/Service</label>
+            <input type="text" id="idlar-bureau" value="Information and Communications Technology Service" oninput="idlarOnChange()" />
+          </div>
+          <div>
+            <label class="lbl">Date/s Covered</label>
+            <select id="idlar-period" onchange="idlarOnPeriodChange()">
+              <option value="">— Select Period —</option>
+            </select>
+          </div>
+        </div>
+        <hr class="section-divider" />
+        <div style="font-weight:700;font-size:13px;color:#475569;margin-bottom:12px;">Signatories</div>
+        <div class="grid-2">
+          <div>
+            <label class="lbl">Submitted By (Name)</label>
+            <input type="text" id="idlar-submittedBy" value="Gian Alec Monillas" oninput="idlarOnChange()" />
+          </div>
+          <div>
+            <label class="lbl">Attested By (Name)</label>
+            <input type="text" id="idlar-attestedBy" value="Noel E. Reyes" oninput="idlarOnChange()" />
+          </div>
+          <div>
+            <label class="lbl">Title / Position</label>
+            <input type="text" id="idlar-submittedTitle" value="Technical Assistant I" oninput="idlarOnChange()" />
+          </div>
+          <div>
+            <label class="lbl">Title / Position</label>
+            <textarea id="idlar-attestedTitle" rows="2" oninput="idlarOnChange()">Information Technology Officer III</textarea>
+          </div>
+          <div>
+            <label class="lbl">Date Submitted</label>
+            <input type="date" id="idlar-submittedDate" oninput="idlarOnChange()" />
+          </div>
+          <div>
+            <label class="lbl">Date Attested</label>
+            <input type="date" id="idlar-attestedDate" oninput="idlarOnChange()" />
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="idlar-daily-log-card">
+        <div class="row-between">
+          <div class="card-title" style="margin-bottom:0;">Daily Log Entries</div>
+          <div class="row" style="gap:8px;">
+            <button class="btn btn-primary" style="padding:7px 16px;font-size:13px;" onclick="idlarAddRow()">+ Add Day</button>
+            <button class="btn btn-danger" style="padding:7px 16px;font-size:13px;" onclick="idlarConfirmClear()">🗑 Clear All Entries</button>
+          </div>
+        </div>
+        <div id="idlar-confirm-clear" class="confirm-box" style="display:none;margin-top:12px;">
+          <span>⚠️ Clear all log entries?</span>
+          <button class="btn btn-danger" style="padding:6px 14px;" onclick="idlarClearAll()">Yes, Clear</button>
+          <button class="btn btn-ghost" style="padding:6px 14px;" onclick="document.getElementById('idlar-confirm-clear').style.display='none'">Cancel</button>
+        </div>
+
+        <!-- Period not selected warning -->
+        <div id="idlar-no-period-msg" style="display:none;margin:18px 0;padding:14px 18px;background:#fef9c3;border:1.5px solid #fbbf24;border-radius:8px;color:#92400e;font-size:13px;font-weight:600;text-align:center;">
+          ⚠️ Please select a <strong>Date/s Covered</strong> period first before entering daily logs.
+        </div>
+
+        <!-- Log content (hidden when no period) -->
+        <div id="idlar-log-body" style="display:none;">
+          <div style="font-size:13px;color:#64748b;margin:10px 0 14px;">Enter each work day with time in/out and accomplishments.</div>
+          <div id="idlar-rows"></div>
+          <div id="idlar-save-error" style="display:none;background:#fef2f2;border:1.5px solid #fca5a5;border-radius:8px;padding:12px 16px;margin-top:10px;color:#dc2626;font-size:13px;font-weight:600;"></div>
+          <div style="margin-top:20px;padding-top:16px;border-top:1.5px solid #e2e8f0;display:flex;gap:10px;justify-content:flex-end;">
+            <button class="btn btn-success" style="padding:11px 32px;font-size:14px;" onclick="idlarSave()">💾 Save IDLAR</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== DASHBOARD TAB ===== -->
+  <div id="tab-dashboard" class="tab-content">
+    <div class="card">
+      <div class="card-title">Overall Summary</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px;">
+        <div class="stat-card" style="background:#eff6ff;"><div class="stat-num" style="color:#1a56db;" id="stat-total">0</div><div class="stat-lbl">DAR Periods Saved</div></div>
+        <div class="stat-card" style="background:#eff6ff;"><div class="stat-num" style="color:#1a56db;" id="stat-idlar-total">0</div><div class="stat-lbl">IDLAR Periods Saved</div></div>
+        <div class="stat-card" style="background:#ecfdf5;"><div class="stat-num" style="color:#059669;" id="stat-days">0</div><div class="stat-lbl">Total Days Logged</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
+        <div class="stat-card" style="background:#fef3c7;"><div class="stat-num" style="color:#d97706;" id="stat-absent">0</div><div class="stat-lbl">Absent</div></div>
+        <div class="stat-card" style="background:#d1fae5;"><div class="stat-num" style="color:#059669;" id="stat-wellness">0</div><div class="stat-lbl" id="stat-wellness-lbl">Wellness / Leave</div></div>
+        <div class="stat-card" style="background:#f3e8ff;"><div class="stat-num" style="color:#7c3aed;" id="stat-holiday">0</div><div class="stat-lbl">Holiday</div></div>
+      </div>
+      <div style="font-size:11px;color:#94a3b8;margin-top:10px;">* Absent, Wellness Leave, and Holiday counts are deduplicated — same date across DAR and IDLAR is counted only once.</div>
+    </div>
+
+    <div class="card">
+      <div class="row-between" style="margin-bottom:12px;">
+        <div class="card-title" style="margin-bottom:0;">Daily Accomplishment Reports by Period</div>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#1a56db;"></div> Regular</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#f59e0b;"></div> Absent</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#10b981;"></div> Wellness Leave</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#8b5cf6;"></div> Holiday</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#7c3aed;"></div> Saturday</div>
+      </div>
+      <div id="dash-periods"></div>
+    </div>
+
+    <div class="card">
+      <div class="row-between" style="margin-bottom:12px;">
+        <div class="card-title" style="margin-bottom:0;">IDLAR by Period</div>
+      </div>
+      <div id="dash-idlar-periods"></div>
+    </div>
+  </div>
+
+  <!-- ===== PREVIEW TAB ===== -->
+  <div id="tab-preview" class="tab-content">
+
+    <!-- Report type chooser -->
+    <div class="card" style="margin-bottom:18px;">
+      <div class="card-title" style="margin-bottom:14px;">Select Report Type to Preview</div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;">
+        <button id="prev-rtype-dar" onclick="switchPreviewType('dar')"
+          style="flex:1;min-width:180px;padding:14px 18px;border-radius:10px;border:2px solid #cbd5e1;background:#f8fafc;color:#475569;font-size:14px;font-weight:700;cursor:pointer;text-align:left;transition:all 0.15s;">
+          📋 Daily Accomplishment Report
+        </button>
+        <button id="prev-rtype-idlar" onclick="switchPreviewType('idlar')"
+          style="flex:1;min-width:180px;padding:14px 18px;border-radius:10px;border:2px solid #cbd5e1;background:#f8fafc;color:#475569;font-size:14px;font-weight:700;cursor:pointer;text-align:left;transition:all 0.15s;">
+          📝 IDLAR (Work From Home)
+        </button>
+      </div>
+    </div>
+
+    <!-- Period + export controls (hidden until type is chosen) -->
+    <div id="preview-controls" style="display:none;">
+      <div class="card" style="margin-bottom:18px;">
+        <div class="row" style="flex-wrap:wrap;gap:10px;align-items:center;">
+          <select id="preview-period-select" onchange="renderPreview()" style="width:auto;min-width:220px;"></select>
+          <button class="btn btn-primary" style="font-size:14px;padding:10px 22px;" onclick="saveAsWord()">📄 Save as Word Document</button>
+          <button class="btn btn-success" style="font-size:14px;padding:10px 22px;" onclick="printWithTitle()">🖨️ Save as PDF / Print</button>
+          <div style="font-size:13px;color:#64748b;align-self:center;">Choose a saved period, then export.</div>
+        </div>
+      </div>
+      <div class="card" id="preview-area">
+        <div id="preview-content"><div style="color:#94a3b8;text-align:center;padding:30px;">Select a saved period above to preview the report.</div></div>
+      </div>
+    </div>
+
+  </div>
+
+</div><!-- end .main -->
+</div><!-- end #tabs-wrapper -->
+
+<div id="print-area"></div>
+<div class="toast" id="toast">✅ Report saved to Dashboard!</div>
+
+<script>
+const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const STORAGE_KEY_BASE = "accomplishment_report_v3";
+function getStorageKey() { return STORAGE_KEY_BASE + "_" + (currentEmploymentType || "cos"); }
+function getIdlarKey(suffix) { return "idlar_" + (currentEmploymentType || "cos") + "_" + suffix; }
+
+let currentEmploymentType = null;
+
+function darPopulatePeriods() {
+  const sel = document.getElementById("info-period");
+  if (!sel) return;
+  const isRegular = currentEmploymentType === "regular";
+  const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const ends = [31,28,31,30,31,30,31,31,30,31,30,31];
+  let html = `<option value="">— Select Period —</option>`;
+  if (isRegular) {
+    months.forEach((m, i) => {
+      html += `<option>${m} 1-${ends[i]}, 2026</option>`;
+    });
+  } else {
+    months.forEach((m, i) => {
+      html += `<option>${m} 1-15, 2026</option>`;
+      html += `<option>${m} 16-${ends[i]}, 2026</option>`;
+    });
+  }
+  sel.innerHTML = html;
+}
+
+function idlarPopulatePeriods() {
+  const sel = document.getElementById("idlar-period");
+  if (!sel) return;
+  const isRegular = currentEmploymentType === "regular";
+  const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const ends = [31,28,31,30,31,30,31,31,30,31,30,31];
+  let html = `<option value="">— Select Period —</option>`;
+  if (isRegular) {
+    months.forEach((m, i) => {
+      html += `<option>${m} 1-${ends[i]}, 2026</option>`;
+    });
+  } else {
+    const halves = [[1,15],[16,null]];
+    months.forEach((m, i) => {
+      html += `<option>${m} 1-15, 2026</option>`;
+      html += `<option>${m} 16-${ends[i]}, 2026</option>`;
+    });
+  }
+  sel.innerHTML = html;
+}
+
+function selectEmploymentType(type) {
+  currentEmploymentType = type;
+  document.getElementById("employment-screen").style.display = "none";
+  document.getElementById("tabs-wrapper").style.display = "block";
+  const badge = document.getElementById("employment-badge");
+  badge.textContent = type === "cos" ? "Contract of Service" : "Regular";
+  badge.style.display = "inline-block";
+  document.getElementById("btn-back-home").style.display = "inline-block";
+  // Reset in-memory state and reload from the correct storage partition
+  savedReports = [];
+  currentDays = [];
+  infoCache = {};
+  idlarSaved = [];
+  idlarRows = [{ date: "", timeIn: "", timeOut: "", accomplishments: "" }];
+  loadAll();
+  renderDayCards();
+  idlarLoadAll();
+  darPopulatePeriods();
+  idlarPopulatePeriods();
+  idlarRenderRows();
+  idlarCheckPeriod();
+  switchTab("entry");
+}
+
+function goHome() {
+  document.getElementById("employment-screen").style.display = "flex";
+  document.getElementById("tabs-wrapper").style.display = "none";
+  document.getElementById("employment-badge").style.display = "none";
+  document.getElementById("btn-back-home").style.display = "none";
+  currentEmploymentType = null;
+}
+
+// savedReports: array of { period, info, days }
+// days: array of { date, dateStr, type ('regular'|'absent'|'holiday'), accomplishments, isSaturday }
+let savedReports = [];
+let currentDays = []; // days for the current entry form
+let infoCache = {};
+
+// ---- HELPERS ----
+function formatDate(dateStr) {
+  const d = new Date(dateStr + "T00:00:00");
+  return DAY_NAMES[d.getDay()] + ", " + MONTH_NAMES[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear();
+}
+function formatDateShort(dateStr) {
+  // No day name — just "Month Day, Year"
+  const d = new Date(dateStr + "T00:00:00");
+  return MONTH_NAMES[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear();
+}
+function updateDatePreview(inputId, previewId) {
+  const val = document.getElementById(inputId).value;
+  document.getElementById(previewId).textContent = val ? formatDateShort(val) : "";
+}
+function escapeHtml(str) {
+  if (!str) return "";
+  return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg || "✅ Report saved!";
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2800);
+}
+
+// ---- TABS ----
+function switchTab(name) {
+  document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
+  document.querySelectorAll("#app-tabs .tab-btn").forEach((el, i) => {
+    const names = ["entry","dashboard","preview"];
+    el.classList.toggle("active", names[i] === name);
+    el.classList.toggle("inactive", names[i] !== name);
+  });
+  document.getElementById("tab-" + name).classList.add("active");
+  if (name === "entry") {
+    // Reset report type — user must pick fresh each visit
+    currentReportType = null;
+    document.getElementById("rtype-dar").classList.remove("active");
+    document.getElementById("rtype-idlar").classList.remove("active");
+    document.getElementById("section-dar").classList.remove("active");
+    document.getElementById("section-idlar").classList.remove("active");
+  }
+  if (name === "dashboard") renderDashboard();
+  if (name === "preview") {
+    currentPreviewType = null;
+    const darBtn   = document.getElementById("prev-rtype-dar");
+    const idlarBtn = document.getElementById("prev-rtype-idlar");
+    if (darBtn)   { darBtn.style.border = "2px solid #cbd5e1"; darBtn.style.background = "#f8fafc"; darBtn.style.color = "#475569"; }
+    if (idlarBtn) { idlarBtn.style.border = "2px solid #cbd5e1"; idlarBtn.style.background = "#f8fafc"; idlarBtn.style.color = "#475569"; }
+    document.getElementById("preview-controls").style.display = "none";
+    document.getElementById("preview-content").innerHTML = `<div style="color:#94a3b8;text-align:center;padding:30px;">Select a report type above to preview.</div>`;
+  }
+}
+
+// ---- REPORT TYPE SWITCHER ----
+let currentReportType = null;
+function switchReportType(type) {
+  currentReportType = type;
+  document.getElementById("rtype-dar").classList.toggle("active", type === "dar");
+  document.getElementById("rtype-idlar").classList.toggle("active", type === "idlar");
+  document.getElementById("section-dar").classList.toggle("active", type === "dar");
+  document.getElementById("section-idlar").classList.toggle("active", type === "idlar");
+}
+
+// ---- PERIOD → DATES ----
+function parsePeriod(periodStr) {
+  // e.g. "May 16-31, 2026" or "February 1-15, 2026"
+  const m = periodStr.match(/^(\w+)\s+(\d+)-(\d+),\s+(\d+)$/);
+  if (!m) return [];
+  const monthIdx = MONTH_NAMES.indexOf(m[1]);
+  const startDay = parseInt(m[2]);
+  const endDay = parseInt(m[3]);
+  const year = parseInt(m[4]);
+  const dates = [];
+  for (let d = startDay; d <= endDay; d++) {
+    const dt = new Date(year, monthIdx, d);
+    if (dt.getMonth() !== monthIdx) break; // safety
+    const dow = dt.getDay();
+    if (dow === 0) continue; // skip Sundays always
+    const iso = year + "-" + String(monthIdx+1).padStart(2,"0") + "-" + String(d).padStart(2,"0");
+    dates.push({ date: iso, dow });
+  }
+  return dates;
+}
+
+function buildDaysFromPeriod(periodStr, existingDays) {
+  const dates = parsePeriod(periodStr);
+  return dates.map(({ date, dow }) => {
+    const existing = existingDays ? existingDays.find(e => e.date === date) : null;
+    const isSaturday = dow === 6;
+    return {
+      date,
+      type: existing ? existing.type : (isSaturday ? "saturday-off" : "regular"),
+      accomplishments: existing ? existing.accomplishments : "",
+      isSaturday
+    };
+  });
+}
+
+// ---- PERIOD CHANGE ----
+function onPeriodChange() {
+  const period = document.getElementById("info-period").value;
+  if (!period) { currentDays = []; renderDayCards(); return; }
+  // Only load if there is a saved report for this period
+  const saved = savedReports.find(r => r.period === period);
+  if (saved) {
+    currentDays = buildDaysFromPeriod(period, saved.days);
+  } else {
+    // Clear all entries — fresh start for this period
+    currentDays = buildDaysFromPeriod(period, []);
+  }
+  renderDayCards();
+  autoSaveDraft();
+}
+
+function onInfoChange() { autoSaveDraft(); }
+
+function onNameChange() {
+  const nameVal = document.getElementById("info-name").value;
+  const subBy = document.getElementById("info-submittedBy");
+  if (!subBy.dataset.manuallyEdited) {
+    subBy.value = nameVal;
+  }
+  autoSaveDraft();
+}
+
+function onPositionChange() {
+  const posVal = document.getElementById("info-position").value;
+  const subTitle = document.getElementById("info-submittedTitle");
+  if (!subTitle.dataset.manuallyEdited) {
+    subTitle.value = posVal;
+  }
+  autoSaveDraft();
+}
+
+// Track if submittedBy or submittedTitle was manually changed
+document.addEventListener("DOMContentLoaded", function() {
+  const subBy = document.getElementById("info-submittedBy");
+  if (subBy) {
+    subBy.addEventListener("input", function() {
+      const nameVal = document.getElementById("info-name").value;
+      if (this.value !== nameVal) {
+        this.dataset.manuallyEdited = "1";
+      } else {
+        delete this.dataset.manuallyEdited;
+      }
+      autoSaveDraft();
+    });
+  }
+  const subTitle = document.getElementById("info-submittedTitle");
+  if (subTitle) {
+    subTitle.addEventListener("input", function() {
+      const posVal = document.getElementById("info-position").value;
+      if (this.value !== posVal) {
+        this.dataset.manuallyEdited = "1";
+      } else {
+        delete this.dataset.manuallyEdited;
+      }
+      autoSaveDraft();
+    });
+  }
+});
+
+// ---- RENDER DAY CARDS ----
+function renderDayCards() {
+  const container = document.getElementById("entries-container");
+  container.innerHTML = "";
+
+  currentDays.forEach((day, idx) => {
+    if (day.isSaturday && day.type === "saturday-off") {
+      // Show "Add Saturday" button
+      const btn = document.createElement("div");
+      btn.className = "sat-add-btn";
+      btn.innerHTML = `+ Add Saturday (${formatDate(day.date)}) — click if you reported to work`;
+      btn.onclick = () => {
+        currentDays[idx].type = "regular";
+        renderDayCards();
+        autoSaveDraft();
+      };
+      container.appendChild(btn);
+      return;
+    }
+
+    const isSat = day.isSaturday;
+    const headerCls = day.type === "absent" ? "absent" : day.type === "holiday" ? "holiday" : day.type === "wellness" ? "wellness" : isSat ? "saturday" : "";
+    const labelCls = isSat ? "day-label saturday" : "day-label";
+
+    const card = document.createElement("div");
+    card.className = "day-card";
+
+    const isRegular = currentEmploymentType === "regular";
+    const chips = [
+      { key: "regular", label: "Regular", cls: "regular" },
+      { key: "absent", label: "Absent", cls: "absent" },
+      isRegular
+        ? { key: "wellness", label: "Leave", cls: "wellness" }
+        : { key: "wellness", label: "Wellness Leave", cls: "wellness" },
+      { key: "holiday", label: "Holiday", cls: "holiday" },
+    ];
+
+    const chipsHTML = chips.map(c =>
+      `<span class="type-chip ${c.cls}${day.type === c.key ? " selected" : ""}"
+        onclick="setDayType(${idx},'${c.key}')"><span class="chip-dot"></span>${c.label}</span>`
+    ).join("");
+
+    // Leave sub-type picker (Regular only, when Leave is selected)
+    const leaveTypes = [
+      { key: "vacation",        label: "Vacation Leave" },
+      { key: "mandatory",       label: "Mandatory / Forced Leave" },
+      { key: "sick",            label: "Sick Leave" },
+      { key: "maternity",       label: "Maternity Leave" },
+      { key: "paternity",       label: "Paternity Leave" },
+      { key: "special_priv",   label: "Special Privilege Leave" },
+      { key: "solo_parent",     label: "Solo Parent Leave" },
+      { key: "study",           label: "Study Leave" },
+      { key: "vawc",            label: "10-Day VAWC Leave" },
+      { key: "rehab",           label: "Rehabilitation Privilege" },
+      { key: "slb_women",       label: "Special Leave Benefits for Women" },
+      { key: "calamity",        label: "Special Emergency (Calamity) Leave" },
+      { key: "adoption",        label: "Adoption Leave" },
+      { key: "wellness",        label: "Wellness Leave" },
+    ];
+    const leaveSubHTML = (isRegular && day.type === "wellness")
+      ? `<div style="margin-top:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <label class="lbl" style="margin-bottom:0;white-space:nowrap;">Type of Leave:</label>
+          <select style="flex:1;min-width:200px;" onchange="setLeaveType(${idx},this.value)">
+            <option value="">— Select Leave Type —</option>
+            ${leaveTypes.map(lt => `<option value="${lt.key}"${day.leaveType === lt.key ? " selected" : ""}>${lt.label}</option>`).join("")}
+          </select>
+        </div>`
+      : "";
+
+    const satRemove = isSat
+      ? `<button class="btn btn-ghost" style="padding:5px 10px;font-size:12px;color:#7c3aed;" onclick="removeSaturday(${idx})">✕ Remove Saturday</button>`
+      : "";
+
+    const showAccomplishment = day.type === "regular";
+    const safeAcc = escapeHtml(day.accomplishments || "");
+    const leaveLabel = isRegular
+      ? (day.leaveType ? getLeaveLabel(day.leaveType) : "Leave")
+      : "wellness leave";
+    const accHTML = showAccomplishment
+      ? `<div style="margin-top:10px;">
+          <label class="lbl">Actual Accomplishment / Output</label>
+          <textarea class="acc-textarea" id="acc-${idx}"
+            onkeydown="accKeydown(event,${idx})"
+            oninput="onAccInput(event,${idx})"
+            onfocus="initAccTextarea(${idx})"
+          >${safeAcc}</textarea>
+          <div style="font-size:11px;color:#94a3b8;margin-top:4px;">
+            Enter → new bullet &nbsp;|&nbsp; Tab → indent as sub-item &nbsp;|&nbsp; Shift+Tab → promote back
+          </div>
+        </div>`
+      : `<div style="margin-top:8px;font-size:13px;color:#94a3b8;font-style:italic;">
+          No accomplishment entry needed for ${day.type === "absent" ? "absent" : day.type === "wellness" ? leaveLabel : "holiday"} days.
+        </div>`;
+
+    card.innerHTML = `
+      <div class="day-card-header ${day.type === 'absent' ? 'absent' : day.type === 'holiday' ? 'holiday' : day.type === 'wellness' ? 'wellness' : isSat ? 'saturday' : ''}">
+        <span class="${labelCls}">${formatDate(day.date)}</span>
+        ${satRemove}
+      </div>
+      <div class="day-card-body">
+        <div class="day-type-row">${chipsHTML}</div>
+        ${leaveSubHTML}
+        ${accHTML}
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function setDayType(idx, type) {
+  currentDays[idx].type = type;
+  if (type !== "regular") currentDays[idx].accomplishments = "";
+  if (type !== "wellness") currentDays[idx].leaveType = null;
+  renderDayCards();
+  autoSaveDraft();
+}
+
+function setLeaveType(idx, leaveType) {
+  currentDays[idx].leaveType = leaveType;
+  renderDayCards();
+  autoSaveDraft();
+}
+
+function getLeaveLabel(leaveType, upper) {
+  const map = {
+    vacation:    "Vacation Leave",
+    mandatory:   "Mandatory/Forced Leave",
+    sick:        "Sick Leave",
+    maternity:   "Maternity Leave",
+    paternity:   "Paternity Leave",
+    special_priv:"Special Privilege Leave",
+    solo_parent: "Solo Parent Leave",
+    study:       "Study Leave",
+    vawc:        "10-Day VAWC Leave",
+    rehab:       "Rehabilitation Privilege",
+    slb_women:   "Special Leave Benefits for Women",
+    calamity:    "Special Emergency (Calamity) Leave",
+    adoption:    "Adoption Leave",
+    wellness:    "Wellness Leave",
+  };
+  const label = map[leaveType] || "Leave";
+  return upper ? label.toUpperCase() : label;
+}
+
+function setDayAcc(idx, val) {
+  currentDays[idx].accomplishments = val;
+  autoSaveDraft();
+}
+
+function removeSaturday(idx) {
+  currentDays[idx].type = "saturday-off";
+  currentDays[idx].accomplishments = "";
+  renderDayCards();
+  autoSaveDraft();
+}
+
+// ---- CLEAR ----
+function confirmClear() { document.getElementById("confirm-clear").style.display = "flex"; }
+function clearAllEntries() {
+  const period = document.getElementById("info-period").value;
+  currentDays = buildDaysFromPeriod(period, []);
+  document.getElementById("confirm-clear").style.display = "none";
+  renderDayCards();
+  autoSaveDraft();
+}
+
+// ---- SAVE REPORT ----
+function saveReport() {
+  const period = document.getElementById("info-period").value;
+  const info = getInfoFields();
+
+  // Only save days that are visible (not saturday-off) and have content or are absent/holiday
+  const daysToSave = currentDays
+    .filter(d => d.type !== "saturday-off")
+    .map(d => ({ ...d }));
+
+  // Remove or replace existing entry for this period
+  savedReports = savedReports.filter(r => r.period !== period);
+  savedReports.push({ period, info, days: daysToSave, savedAt: new Date().toISOString() });
+
+  persistAll();
+  showToast("✅ Report saved to Dashboard!");
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ---- AUTO SAVE DRAFT ----
+function autoSaveDraft() {
+  const draft = {
+    period: document.getElementById("info-period").value,
+    info: getInfoFields(),
+    days: currentDays
+  };
+  try { localStorage.setItem(getStorageKey() + "_draft", JSON.stringify(draft)); } catch(e) {}
+}
+
+// ---- PERSIST ----
+function persistAll() {
+  try { localStorage.setItem(getStorageKey(), JSON.stringify({ savedReports })); } catch(e) {}
+}
+
+function loadAll() {
+  try {
+    const raw = localStorage.getItem(getStorageKey());
+    if (raw) {
+      const d = JSON.parse(raw);
+      if (d.savedReports) savedReports = d.savedReports;
+    }
+  } catch(e) {}
+
+  // Load draft
+  try {
+    const draftRaw = localStorage.getItem(getStorageKey() + "_draft");
+    if (draftRaw) {
+      const draft = JSON.parse(draftRaw);
+      if (draft.period) {
+        document.getElementById("info-period").value = draft.period;
+      }
+      if (draft.info) {
+        const fields = ["name","position","division","bureau","period","submittedBy","submittedTitle","submittedDate","approvedBy","approvedTitle","approvedDate"];
+        fields.forEach(f => {
+          const el = document.getElementById("info-" + f);
+          if (el && draft.info[f] !== undefined) el.value = draft.info[f];
+        });
+        updateDatePreview("info-submittedDate","prev-submittedDate");
+        updateDatePreview("info-approvedDate","prev-approvedDate");
+      }
+      if (draft.days && draft.days.length > 0) {
+        currentDays = draft.days;
+      } else {
+        const period = document.getElementById("info-period").value;
+        currentDays = buildDaysFromPeriod(period, []);
+      }
+    } else {
+      const period = document.getElementById("info-period").value;
+      currentDays = buildDaysFromPeriod(period, []);
+    }
+  } catch(e) {
+    const period = document.getElementById("info-period").value;
+    currentDays = buildDaysFromPeriod(period, []);
+  }
+}
+
+function getInfoFields() {
+  return {
+    name: document.getElementById("info-name").value,
+    position: document.getElementById("info-position").value,
+    division: document.getElementById("info-division").value,
+    bureau: document.getElementById("info-bureau").value,
+    period: document.getElementById("info-period").value,
+    submittedBy: document.getElementById("info-submittedBy").value,
+    submittedTitle: document.getElementById("info-submittedTitle").value,
+    submittedDate: document.getElementById("info-submittedDate").value,
+    approvedBy: document.getElementById("info-approvedBy").value,
+    approvedTitle: document.getElementById("info-approvedTitle").value,
+    approvedDate: document.getElementById("info-approvedDate").value,
+  };
+}
+
+// ---- DASHBOARD ----
+function toggleDashEntry(entryId) {
+  const textEl = document.getElementById(entryId + "-text");
+  const btnEl = document.getElementById(entryId + "-btn");
+  if (!textEl) return;
+  const isExpanded = textEl.classList.toggle("expanded");
+  if (btnEl) btnEl.textContent = isExpanded ? "Collapse" : "Expand";
+}
+
+function editReport(period) {
+  const report = savedReports.find(r => r.period === period);
+  if (!report) return;
+  const fields = ["name","position","division","bureau","submittedBy","submittedTitle","submittedDate","approvedBy","approvedTitle","approvedDate"];
+  fields.forEach(f => {
+    const el = document.getElementById("info-" + f);
+    if (el && report.info[f] !== undefined) el.value = report.info[f];
+  });
+  document.getElementById("info-period").value = period;
+  updateDatePreview("info-submittedDate","prev-submittedDate");
+  updateDatePreview("info-approvedDate","prev-approvedDate");
+  currentDays = buildDaysFromPeriod(period, report.days);
+  switchTab("entry");
+  switchReportType("dar");
+  renderDayCards();
+  autoSaveDraft();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function renderDashboard() {
+  // --- Collect all unique dates per type across DAR and IDLAR ---
+  const absentDates = new Set();
+  const holidayDates = new Set();
+  const wellnessDates = new Set();
+  let totalDays = 0;
+
+  savedReports.forEach(r => {
+    totalDays += r.days.length;
+    r.days.forEach(d => {
+      if (d.type === "absent") absentDates.add(d.date);
+      if (d.type === "holiday") holidayDates.add(d.date);
+      if (d.type === "wellness") wellnessDates.add(d.date);
+    });
+  });
+
+  // Merge IDLAR dates into the same sets (deduplicates same-date entries)
+  idlarSaved.forEach(s => {
+    const darMap = idlarGetDarDayMap(s.info.period);
+    (s.rows || []).forEach(row => {
+      if (!row.date) return;
+      const darType = darMap[row.date]?.type;
+      if (darType === "absent")   absentDates.add(row.date);
+      if (darType === "holiday")  holidayDates.add(row.date);
+      if (darType === "wellness") wellnessDates.add(row.date);
+    });
+  });
+
+  document.getElementById("stat-total").textContent = savedReports.length;
+  document.getElementById("stat-days").textContent = totalDays;
+  document.getElementById("stat-absent").textContent = absentDates.size;
+  document.getElementById("stat-wellness").textContent = wellnessDates.size;
+  document.getElementById("stat-wellness-lbl").textContent = currentEmploymentType === "regular" ? "Leave" : "Wellness Leave";
+  document.getElementById("stat-holiday").textContent = holidayDates.size;
+  document.getElementById("stat-idlar-total").textContent = idlarSaved.length;
+
+  // --- DAR periods ---
+  const periodsDiv = document.getElementById("dash-periods");
+  if (savedReports.length === 0) {
+    periodsDiv.innerHTML = `<div class="empty-dash"><div>📋</div><p>No saved reports yet.<br>Fill in the Entry tab and click <strong>Save Report</strong>.</p></div>`;
+  } else {
+    const sorted = [...savedReports].sort((a, b) => {
+      const ad = a.days[0] ? a.days[0].date : "";
+      const bd = b.days[0] ? b.days[0].date : "";
+      return ad.localeCompare(bd);
+    });
+    periodsDiv.innerHTML = "";
+    sorted.forEach(report => {
+      const withAcc = report.days.filter(d => d.type === "regular").length;
+      const absent = report.days.filter(d => d.type === "absent").length;
+      const holiday = report.days.filter(d => d.type === "holiday").length;
+      const wellness = report.days.filter(d => d.type === "wellness").length;
+      const savedAt = report.savedAt ? new Date(report.savedAt).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" }) + ", " + new Date(report.savedAt).toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit", hour12: true }) : "";
+      const periodKey = report.period.replace(/[^a-z0-9]/gi, "_");
+
+      const entriesHTML = report.days.map((day, i) => {
+        let cls = "dash-entry";
+        if (day.type === "absent") cls += " absent";
+        else if (day.type === "holiday") cls += " holiday";
+        else if (day.type === "wellness") cls += " wellness";
+        else if (day.isSaturday) cls += " saturday";
+
+        const entryId = `dash-entry-${periodKey}-${i}`;
+        let previewText = "", fullText = "", showExpandBtn = false;
+
+        if (day.type === "absent" || day.type === "holiday" || day.type === "wellness") {
+          const color = day.type === "absent" ? "#92400e" : day.type === "wellness" ? "#065f46" : "#5b21b6";
+          const label = day.type === "wellness" ? (currentEmploymentType === "regular" ? getLeaveLabel(day.leaveType, true) : "WELLNESS LEAVE") : day.type.toUpperCase();
+          previewText = `<span style="font-weight:700;text-transform:uppercase;color:${color};">${label}</span>`;
+        } else if (day.accomplishments) {
+          const firstLine = day.accomplishments.split("\n")[0];
+          previewText = escapeHtml(firstLine.length > 80 ? firstLine.slice(0, 80) + "…" : firstLine);
+          fullText = escapeHtml(day.accomplishments);
+          showExpandBtn = true;
+        } else {
+          previewText = `<span class="dash-entry-empty">No accomplishments entered</span>`;
+        }
+
+        const expandBtn = showExpandBtn
+          ? `<button class="dash-btn dash-btn-expand" id="${entryId}-btn" onclick="toggleDashEntry('${entryId}')">Expand</button>` : "";
+        const editBtn = `<button class="dash-btn dash-btn-edit" onclick="editReport('${escapeHtml(report.period)}')">Edit</button>`;
+
+        return `
+          <div class="${cls}" id="${entryId}">
+            <div class="dash-entry-top">
+              <div>
+                <div class="dash-entry-date">${formatDate(day.date)}</div>
+                <div class="dash-entry-preview">${previewText}</div>
+              </div>
+              <div class="dash-entry-actions">${expandBtn}${editBtn}</div>
+            </div>
+            ${showExpandBtn ? `<div class="dash-entry-text" id="${entryId}-text">${fullText}</div>` : ""}
+          </div>`;
+      }).join("");
+
+      const groupId = `period-group-${periodKey}`;
+      const groupDiv = document.createElement("div");
+      groupDiv.className = "dash-period-group";
+      groupDiv.innerHTML = `
+        <div class="dash-period-title" onclick="togglePeriodGroup('${groupId}')">
+          <span>
+            Period: ${escapeHtml(report.period)}
+            <span style="font-size:12px;font-weight:400;color:#bfdbfe;margin-left:12px;">
+              ${report.days.length} day(s) &nbsp;·&nbsp; ${withAcc} with output &nbsp;·&nbsp; ${absent} absent &nbsp;·&nbsp; ${wellness} wellness &nbsp;·&nbsp; ${holiday} holiday
+              ${savedAt ? "&nbsp;·&nbsp; Saved " + savedAt : ""}
+            </span>
+          </span>
+          <span style="display:flex;align-items:center;gap:10px;">
+            <button class="dash-btn" style="border-color:#fca5a5;color:#dc2626;background:#fef2f2;font-size:12px;padding:4px 12px;" onclick="event.stopPropagation();deletePeriod('${escapeHtml(report.period)}')">🗑 Delete</button>
+            <span class="dash-period-chevron">▼</span>
+          </span>
+        </div>
+        <div class="dash-group-box" id="${groupId}">${entriesHTML}</div>
+      `;
+      periodsDiv.appendChild(groupDiv);
+    });
+  }
+
+  // --- IDLAR periods ---
+  const idlarDiv = document.getElementById("dash-idlar-periods");
+  if (idlarSaved.length === 0) {
+    idlarDiv.innerHTML = `<div class="empty-dash"><div>🗂️</div><p>No saved IDLARs yet.<br>Go to Entry → IDLAR and click <strong>Save IDLAR</strong>.</p></div>`;
+    return;
+  }
+
+  idlarDiv.innerHTML = "";
+  idlarSaved.forEach((s, idx) => {
+    const periodKey = ("idlar_" + (s.info.period || idx)).replace(/[^a-z0-9]/gi, "_");
+    const groupId = `idlar-group-${periodKey}-${idx}`;
+    const darMap = idlarGetDarDayMap(s.info.period);
+
+    // Count by looking up DAR type for each row date
+    const absent  = (s.rows || []).filter(r => r.date && darMap[r.date]?.type === "absent").length;
+    const holiday = (s.rows || []).filter(r => r.date && darMap[r.date]?.type === "holiday").length;
+    const wellness= (s.rows || []).filter(r => r.date && darMap[r.date]?.type === "wellness").length;
+
+    const savedAt = s.savedAt ? new Date(s.savedAt).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" }) + ", " + new Date(s.savedAt).toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit", hour12: true }) : "";
+
+    const rowsHTML = (s.rows || []).map((row, i) => {
+      const darDay  = row.date ? darMap[row.date] : null;
+      const darType = darDay ? darDay.type : null;
+      const isBlocked = darType && darType !== "regular";
+
+      let cls = "dash-entry";
+      if (darType === "absent")   cls += " absent";
+      else if (darType === "holiday")  cls += " holiday";
+      else if (darType === "wellness") cls += " wellness";
+
+      const entryId = `${groupId}-row-${i}`;
+      const dateLabel = row.date ? idlarFmtDate(row.date) : `Day ${i + 1}`;
+      const timeLabel = (!isBlocked && (row.timeIn || row.timeOut)) ? `&nbsp;·&nbsp; In: ${idlarFmtTime(row.timeIn)} &nbsp;Out: ${idlarFmtTime(row.timeOut)}` : "";
+
+      let previewText = "", fullText = "", showExpandBtn = false;
+      if (darType === "absent") {
+        previewText = `<span style="font-weight:700;color:#92400e;">ABSENT</span>`;
+      } else if (darType === "wellness") {
+        previewText = `<span style="font-weight:700;color:#065f46;">${currentEmploymentType === "regular" ? getLeaveLabel(day?.leaveType, true) : "WELLNESS LEAVE"}</span>`;
+      } else if (darType === "holiday") {
+        previewText = `<span style="font-weight:700;color:#5b21b6;">HOLIDAY</span>`;
+      } else {
+        const accText = row.accomplishments || (darDay ? darDay.accomplishments : "") || "";
+        if (accText) {
+          const firstLine = accText.split("\n")[0];
+          previewText = escapeHtml(firstLine.length > 80 ? firstLine.slice(0, 80) + "…" : firstLine);
+          fullText = escapeHtml(accText);
+          showExpandBtn = true;
+        } else {
+          previewText = `<span class="dash-entry-empty">No accomplishments entered</span>`;
+        }
+      }
+
+      const expandBtn = showExpandBtn
+        ? `<button class="dash-btn dash-btn-expand" id="${entryId}-btn" onclick="toggleDashEntry('${entryId}')">Expand</button>` : "";
+      const editBtnIdlar = `<button class="dash-btn dash-btn-edit" onclick="idlarEdit(${idx})">Edit</button>`;
+
+      return `
+        <div class="${cls}" id="${entryId}">
+          <div class="dash-entry-top">
+            <div>
+              <div class="dash-entry-date">${escapeHtml(dateLabel)}<span style="font-size:11px;font-weight:400;color:#64748b;">${timeLabel}</span></div>
+              <div class="dash-entry-preview">${previewText}</div>
+            </div>
+            <div class="dash-entry-actions">${expandBtn}${editBtnIdlar}</div>
+          </div>
+          ${showExpandBtn ? `<div class="dash-entry-text" id="${entryId}-text">${fullText}</div>` : ""}
+        </div>`;
+    }).join("");
+
+    const groupDiv = document.createElement("div");
+    groupDiv.className = "dash-period-group";
+    groupDiv.innerHTML = `
+      <div class="dash-period-title" onclick="togglePeriodGroup('${groupId}')">
+        <span>
+          IDLAR: ${escapeHtml(s.info.period || "(No period)")}
+          <span style="font-size:12px;font-weight:400;color:#bfdbfe;margin-left:12px;">
+            ${(s.rows || []).length} day(s) &nbsp;·&nbsp; ${absent} absent &nbsp;·&nbsp; ${wellness} wellness &nbsp;·&nbsp; ${holiday} holiday
+            ${savedAt ? "&nbsp;·&nbsp; Saved " + savedAt : ""}
+          </span>
+        </span>
+        <span style="display:flex;align-items:center;gap:10px;">
+          <button class="dash-btn" style="border-color:#fca5a5;color:#dc2626;background:#fef2f2;font-size:12px;padding:4px 12px;" onclick="event.stopPropagation();idlarDelete(${idx});renderDashboard()">🗑 Delete</button>
+          <span class="dash-period-chevron">▼</span>
+        </span>
+      </div>
+      <div class="dash-group-box" id="${groupId}">${rowsHTML}</div>
+    `;
+    idlarDiv.appendChild(groupDiv);
+  });
+}
+
+function printWithTitle() {
+  const period = document.getElementById("preview-period-select")?.value || "";
+  const originalTitle = document.title;
+  if (currentPreviewType === "idlar") {
+    document.title = period ? `Individual Daily Log and Accomplishment Report - ${period}` : "IDLAR";
+    const content = document.getElementById("preview-content")?.innerHTML || "";
+    const printDiv = document.getElementById("print-area");
+    printDiv.innerHTML = `<div style="font-family:'Times New Roman',Times,serif;">${content}</div>`;
+    window.print();
+    document.title = originalTitle;
+    printDiv.innerHTML = "";
+  } else {
+    document.title = period ? `Accomplishment Report - ${period}` : "Accomplishment Report";
+    window.print();
+    document.title = originalTitle;
+  }
+}
+
+function togglePeriodGroup(groupId) {
+  const box = document.getElementById(groupId);
+  if (!box) return;
+  const title = box.previousElementSibling;
+  const isOpen = box.classList.toggle("open");
+  if (title) title.classList.toggle("open", isOpen);
+}
+
+function deletePeriod(period) {
+  if (!confirm(`Delete the report for "${period}"? This cannot be undone.`)) return;
+  savedReports = savedReports.filter(r => r.period !== period);
+  persistAll();
+  renderDashboard();
+  showToast("🗑 Period deleted.");
+}
+
+// ---- PREVIEW ----
+let currentPreviewType = null;
+
+function switchPreviewType(type) {
+  currentPreviewType = type;
+  // Style the buttons
+  const darBtn   = document.getElementById("prev-rtype-dar");
+  const idlarBtn = document.getElementById("prev-rtype-idlar");
+  darBtn.style.border   = type === "dar"   ? "2.5px solid #1a56db" : "2px solid #cbd5e1";
+  darBtn.style.background   = type === "dar"   ? "#eff6ff" : "#f8fafc";
+  darBtn.style.color    = type === "dar"   ? "#1e3a8a" : "#475569";
+  idlarBtn.style.border = type === "idlar" ? "2.5px solid #1a56db" : "2px solid #cbd5e1";
+  idlarBtn.style.background = type === "idlar" ? "#eff6ff" : "#f8fafc";
+  idlarBtn.style.color  = type === "idlar" ? "#1e3a8a" : "#475569";
+  // Show controls
+  document.getElementById("preview-controls").style.display = "block";
+  // Populate period dropdown
+  const sel = document.getElementById("preview-period-select");
+  if (type === "dar") {
+    sel.innerHTML = savedReports.length === 0
+      ? `<option value="">— No saved DAR reports —</option>`
+      : savedReports.map(r => `<option value="${escapeHtml(r.period)}">${escapeHtml(r.period)}</option>`).join("");
+  } else {
+    sel.innerHTML = idlarSaved.length === 0
+      ? `<option value="">— No saved IDLARs —</option>`
+      : idlarSaved.map(s => `<option value="${escapeHtml(s.info.period)}">${escapeHtml(s.info.period || "(No period)")}</option>`).join("");
+  }
+  renderPreview();
+}
+
+function renderPreviewTab() {
+  // Just reset to no type chosen when switching to tab
+  // (we don't auto-select to force the user to choose)
+  if (currentPreviewType) switchPreviewType(currentPreviewType);
+}
+
+function renderPreview() {
+  const sel = document.getElementById("preview-period-select");
+  const period = sel?.value;
+  const content = document.getElementById("preview-content");
+
+  if (!period) {
+    content.innerHTML = `<div style="color:#94a3b8;text-align:center;padding:30px;">No saved reports yet. Fill in the Entry tab and save a report.</div>`;
+    document.getElementById("print-area").innerHTML = "";
+    return;
+  }
+
+  if (currentPreviewType === "idlar") {
+    const s = idlarSaved.find(r => r.info.period === period);
+    if (!s) return;
+    content.innerHTML = idlarBuildHTML(s);
+    return;
+  }
+
+  // DAR preview (existing logic below)
+  const report = savedReports.find(r => r.period === period);
+  if (!report) return;
+
+  const { info, days } = report;
+
+  // Only include regular, absent, holiday — NOT saturday-off; saturdays only if reported
+  const printDays = days.filter(d => d.type !== "saturday-off");
+
+  const rows = printDays.map(day => {
+    let acc;
+    if (day.type === "absent" || day.type === "holiday" || day.type === "wellness") {
+      const label = day.type === "wellness" ? (currentEmploymentType === "regular" ? getLeaveLabel(day.leaveType, true) : "WELLNESS LEAVE") : day.type.toUpperCase();
+      acc = `<strong>${label}</strong>`;
+    } else {
+      const lines = (day.accomplishments || "").split("\n");
+      acc = lines.map(line => {
+        if (!line.trim()) return "";
+        const esc = line.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+        if (line.startsWith("   – ") || line.startsWith("   - ")) {
+          // Sub-item: indent left, hanging so dash aligns
+          const content = esc.trimStart();
+          return `<div style="margin:0 0 0 20px;text-indent:-12px;padding-left:12px;text-align:justify;">${content}</div>`;
+        }
+        // Main bullet: hanging indent so text wraps past the bullet
+        return `<div style="margin:0;text-indent:-14px;padding-left:14px;text-align:justify;">${esc}</div>`;
+      }).filter(Boolean).join("") || "&nbsp;";
+    }
+    // Split day name from the rest of the date for two-line display
+    const fullDateStr = formatDate(day.date); // e.g. "Wednesday, June 4, 2026"
+    const commaIdx = fullDateStr.indexOf(",");
+    const dayName = fullDateStr.slice(0, commaIdx);       // "Wednesday"
+    const dateOnly = fullDateStr.slice(commaIdx + 2);     // "June 4, 2026"
+    return `<tr>
+      <td style="width:130px;vertical-align:top;text-align:center;padding:4px 6px;border:1px solid #000;line-height:1.3;">
+        <span style="font-size:9pt;color:#555;">${escapeHtml(dayName)}</span><br/>
+        <span style="font-size:11pt;">${escapeHtml(dateOnly)}</span>
+      </td>
+      <td style="vertical-align:top;padding:4px 8px;border:1px solid #000;line-height:1.15;">${acc}</td>
+    </tr>`;
+  }).join("");
+
+  const subDate = info.submittedDate ? formatDateShort(info.submittedDate) : "";
+  const appDate = info.approvedDate ? formatDateShort(info.approvedDate) : "";
+
+  const html = `
+    <div style="font-family:'Bookman Old Style','Bookman',Georgia,serif;font-size:11pt;color:#000;">
+      <div style="text-align:center;font-weight:bold;font-size:14pt;text-decoration:underline;margin-bottom:4px;">ACCOMPLISHMENT REPORT</div>
+      <div style="text-align:center;font-size:11pt;margin-bottom:16px;">for the Period ${escapeHtml(period)}</div>
+      <table style="width:100%;border-collapse:collapse;">
+        <tbody>
+          <tr>
+            <td colspan="2" style="border:1px solid #000;padding:8px 10px;line-height:1.4;">
+              <span>Name of Personnel:</span> <strong>${escapeHtml(info.name)}</strong><br/>
+              <span>Title/Position:</span> <strong>${escapeHtml(info.position || "")}</strong><br/>
+              <span>Division:</span> <strong>${escapeHtml(info.division)}</strong><br/>
+              <span>Bureau/Office:</span> <strong>${escapeHtml(info.bureau)}</strong>
+            </td>
+          </tr>
+          <tr>
+            <th style="width:150px;border:1px solid #000;padding:6px 8px;background:#f1f5f9;text-align:center;">Date</th>
+            <th style="border:1px solid #000;padding:6px 8px;background:#f1f5f9;text-align:center;">Actual Accomplishment/Output</th>
+          </tr>
+          ${rows}
+        </tbody>
+      </table>
+      <table class="signatory-table" style="width:100%;border-collapse:collapse;margin-top:28px;page-break-inside:avoid;break-inside:avoid;">
+        <tbody>
+          <tr style="page-break-inside:avoid;">
+            <td style="width:46%;padding:6px 10px;vertical-align:top;">
+              <div style="font-size:11pt;margin-bottom:40px;">Submitted by:</div>
+              <div style="border-top:1px solid #000;padding-top:4px;">
+                <strong>${escapeHtml(info.submittedBy)}</strong><br/>
+                ${escapeHtml(info.submittedTitle)}<br/>
+                Date: ${subDate ? escapeHtml(subDate) : "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"}
+              </div>
+            </td>
+            <td style="width:8%;"></td>
+            <td style="width:46%;padding:6px 10px;vertical-align:top;">
+              <div style="font-size:11pt;margin-bottom:40px;">Approved by:</div>
+              <div style="border-top:1px solid #000;padding-top:4px;">
+                <strong>${escapeHtml(info.approvedBy)}</strong><br/>
+                <span style="white-space:pre-wrap;">${escapeHtml(info.approvedTitle)}</span><br/>
+                Date: ${appDate ? escapeHtml(appDate) : "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"}
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  `;
+  document.getElementById("preview-content").innerHTML = html;
+  document.getElementById("print-area").innerHTML = html;
+}
+
+// ---- SAVE AS MS WORD ----
+function saveAsWord() {
+  const sel = document.getElementById("preview-period-select");
+  const period = sel.value;
+  if (!period) { alert("Please select a saved period first."); return; }
+
+  // IDLAR Word export
+  if (currentPreviewType === "idlar") {
+    const s = idlarSaved.find(r => r.info.period === period);
+    if (!s) return;
+    idlarSaveWordForEntry(s);
+    return;
+  }
+
+  const report = savedReports.find(r => r.period === period);
+  if (!report) return;
+
+  const { info, days } = report;
+  const printDays = days.filter(d => d.type !== "saturday-off");
+  const subDate = info.submittedDate ? formatDateShort(info.submittedDate) : "";
+  const appDate = info.approvedDate ? formatDateShort(info.approvedDate) : "";
+
+  const rowsWord = printDays.map(day => {
+    let acc;
+    if (day.type === "absent" || day.type === "holiday" || day.type === "wellness") {
+      const label = day.type === "wellness" ? (currentEmploymentType === "regular" ? getLeaveLabel(day.leaveType, true) : "WELLNESS LEAVE") : day.type.toUpperCase();
+      acc = `<b>${label}</b>`;
+    } else {
+      const lines = (day.accomplishments || "").split("\n");
+      acc = lines.map(line => {
+        if (!line.trim()) return "";
+        const esc = line.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+        if (line.startsWith("   – ") || line.startsWith("   - ")) {
+          return `<p style="margin:0;mso-line-height-rule:exactly;line-height:100%;text-align:justify;margin-left:20pt;text-indent:-12pt;">${esc.trimStart()}</p>`;
+        }
+        return `<p style="margin:0;mso-line-height-rule:exactly;line-height:100%;text-align:justify;text-indent:-14pt;margin-left:14pt;">${esc}</p>`;
+      }).filter(Boolean).join("") || "&nbsp;";
+    }
+    const fullDateStr = formatDate(day.date);
+    const commaIdx = fullDateStr.indexOf(",");
+    const dayName = fullDateStr.slice(0, commaIdx);
+    const dateOnly = fullDateStr.slice(commaIdx + 2);
+    return `<tr>
+      <td width="140" valign="top" style="border:1pt solid black;padding:5pt 6pt;text-align:center;">
+        <span style="font-size:9pt;color:#555555;">${escapeHtml(dayName)}</span><br/>
+        <span style="font-size:11pt;">${escapeHtml(dateOnly)}</span>
+      </td>
+      <td valign="top" style="border:1pt solid black;padding:5pt 8pt;">${acc}</td>
+    </tr>`;
+  }).join("");
+
+  const wordHtml = `
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="UTF-8"/>
+<meta name=ProgId content=Word.Document>
+<meta name=Generator content="Microsoft Word 15">
+<!--[if gte mso 9]>
+<xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom>
+<w:DoNotOptimizeForBrowser/></w:WordDocument></xml>
+<![endif]-->
+<style>
+  @page { margin: 1in 1in 1in 1in; }
+  body { font-family: 'Bookman Old Style', Bookman, Georgia, serif; font-size: 11pt; color: #000; }
+  table { border-collapse: collapse; width: 100%; }
+  td, th { font-family: 'Bookman Old Style', Bookman, Georgia, serif; font-size: 11pt; }
+  p { margin: 0; line-height: 100%; mso-line-height-rule: exactly; }
+</style>
+</head>
+<body>
+<p style="text-align:center;font-weight:bold;font-size:14pt;text-decoration:underline;margin-bottom:4pt;">ACCOMPLISHMENT REPORT</p>
+<p style="text-align:center;font-size:11pt;margin-bottom:12pt;">for the Period ${escapeHtml(period)}</p>
+<table>
+  <tr>
+    <td colspan="2" style="border:1pt solid black;padding:6pt 8pt;line-height:115%;mso-line-height-rule:exactly;">
+      Name of Personnel: <b>${escapeHtml(info.name)}</b><br/>
+      Title/Position: <b>${escapeHtml(info.position || "")}</b><br/>
+      Division: <b>${escapeHtml(info.division)}</b><br/>
+      Bureau/Office: <b>${escapeHtml(info.bureau)}</b>
+    </td>
+  </tr>
+  <tr>
+    <th width="140" style="border:1pt solid black;padding:5pt 6pt;background:#f1f5f9;text-align:center;">Date</th>
+    <th style="border:1pt solid black;padding:5pt 8pt;background:#f1f5f9;text-align:center;">Actual Accomplishment/Output</th>
+  </tr>
+  ${rowsWord}
+</table>
+<br/><br/>
+<table width="100%" style="border-collapse:collapse;page-break-inside:avoid;">
+  <tr style="page-break-inside:avoid;">
+    <td width="46%" valign="top" style="padding:6pt 8pt;">
+      <p style="margin:0 0 40pt 0;">Submitted by:</p>
+      <div style="border-top:1pt solid black;padding-top:4pt;">
+        <b>${escapeHtml(info.submittedBy)}</b><br/>
+        ${escapeHtml(info.submittedTitle)}<br/>
+        Date: ${subDate ? escapeHtml(subDate) : "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"}
+      </div>
+    </td>
+    <td width="8%"></td>
+    <td width="46%" valign="top" style="padding:6pt 8pt;">
+      <p style="margin:0 0 40pt 0;">Approved by:</p>
+      <div style="border-top:1pt solid black;padding-top:4pt;">
+        <b>${escapeHtml(info.approvedBy)}</b><br/>
+        ${escapeHtml(info.approvedTitle).replace(/\n/g,"<br/>")}<br/>
+        Date: ${appDate ? escapeHtml(appDate) : "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"}
+      </div>
+    </td>
+  </tr>
+</table>
+</body>
+</html>`;
+
+  const blob = new Blob(["\ufeff" + wordHtml], { type: "application/msword;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const safePeriod = period.replace(/[^a-zA-Z0-9]/g, "_");
+  a.href = url;
+  a.download = `Accomplishment_Report_${safePeriod}.doc`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ---- SMART BULLET TEXTAREA ----
+// Bullet prefix:  "• "   (bullet + space)
+// Sub-item prefix: "   – " (3 spaces + en-dash + space)
+
+const BULLET  = "• ";
+const SUBBULLET = "   – ";
+
+function getLineInfo(ta) {
+  const val = ta.value;
+  const pos = ta.selectionStart;
+  const lineStart = val.lastIndexOf("\n", pos - 1) + 1;
+  const lineEnd   = val.indexOf("\n", pos);
+  const currentLine = val.slice(lineStart, lineEnd === -1 ? undefined : lineEnd);
+  return { val, pos, lineStart, currentLine };
+}
+
+function accKeydown(e, modeOrIdx, idxOrUndef) {
+  // Support both DAR: accKeydown(e, idx) and IDLAR: accKeydown(e, 'idlar', idx)
+  const isIdlar = modeOrIdx === 'idlar';
+  const idx = isIdlar ? idxOrUndef : modeOrIdx;
+  const ta = e.target;
+
+  if (e.key === "Enter") {
+    e.preventDefault();
+    const { val, pos, lineStart, currentLine } = getLineInfo(ta);
+
+    if (e.shiftKey) {
+      insertAtCursor(ta, "\n" + BULLET);
+    } else if (currentLine === BULLET || currentLine === SUBBULLET) {
+      ta.value = val.slice(0, lineStart) + val.slice(pos);
+      ta.selectionStart = ta.selectionEnd = lineStart;
+    } else if (currentLine.startsWith(SUBBULLET)) {
+      insertAtCursor(ta, "\n" + SUBBULLET);
+    } else {
+      insertAtCursor(ta, "\n" + BULLET);
+    }
+
+    isIdlar ? idlarSetRow(idx, 'accomplishments', ta.value) : setDayAcc(idx, ta.value);
+    return;
+  }
+
+  if (e.key === "Tab") {
+    e.preventDefault();
+    const { val, pos, lineStart, currentLine } = getLineInfo(ta);
+
+    if (!e.shiftKey) {
+      if (currentLine.startsWith(BULLET)) {
+        const textAfterBullet = currentLine.slice(BULLET.length);
+        const before = val.slice(0, lineStart);
+        const lineEndIdx = val.indexOf("\n", lineStart);
+        const after = lineEndIdx === -1 ? "" : val.slice(lineEndIdx);
+        ta.value = before + SUBBULLET + textAfterBullet + after;
+        const newCursorPos = lineStart + SUBBULLET.length + Math.max(0, pos - lineStart - BULLET.length);
+        ta.selectionStart = ta.selectionEnd = newCursorPos;
+      }
+    } else {
+      if (currentLine.startsWith(SUBBULLET)) {
+        const textAfterSub = currentLine.slice(SUBBULLET.length);
+        const before = val.slice(0, lineStart);
+        const lineEndIdx = val.indexOf("\n", lineStart);
+        const after = lineEndIdx === -1 ? "" : val.slice(lineEndIdx);
+        ta.value = before + BULLET + textAfterSub + after;
+        const newCursorPos = lineStart + BULLET.length + Math.max(0, pos - lineStart - SUBBULLET.length);
+        ta.selectionStart = ta.selectionEnd = newCursorPos;
+      }
+    }
+
+    isIdlar ? idlarSetRow(idx, 'accomplishments', ta.value) : setDayAcc(idx, ta.value);
+    return;
+  }
+}
+
+function insertAtCursor(ta, text) {
+  const s = ta.selectionStart, e = ta.selectionEnd;
+  ta.value = ta.value.slice(0, s) + text + ta.value.slice(e);
+  ta.selectionStart = ta.selectionEnd = s + text.length;
+}
+
+function initAccTextarea(idx) {
+  const ta = document.getElementById("acc-" + idx);
+  if (!ta || ta.value.trim()) return;
+  ta.value = BULLET;
+  ta.selectionStart = ta.selectionEnd = BULLET.length;
+  setDayAcc(idx, ta.value);
+}
+
+function onAccInput(e, idx) {
+  const ta = e.target;
+
+  // If everything was deleted, auto-restore the bullet
+  if (!ta.value.trim()) {
+    ta.value = BULLET;
+    ta.selectionStart = ta.selectionEnd = BULLET.length;
+    setDayAcc(idx, ta.value);
+    return;
+  }
+
+  // Auto-capitalize first letter after bullet or sub-item prefix on each line
+  const pos = ta.selectionStart;
+  const lines = ta.value.split("\n");
+  let changed = false;
+  const newLines = lines.map(line => {
+    for (const prefix of [BULLET, SUBBULLET]) {
+      if (line.startsWith(prefix)) {
+        const rest = line.slice(prefix.length);
+        if (rest.length > 0 && rest[0] !== rest[0].toUpperCase() && /[a-z]/.test(rest[0])) {
+          changed = true;
+          return prefix + rest[0].toUpperCase() + rest.slice(1);
+        }
+        return line;
+      }
+    }
+    return line;
+  });
+
+  if (changed) {
+    ta.value = newLines.join("\n");
+    ta.selectionStart = ta.selectionEnd = pos;
+  }
+
+  setDayAcc(idx, ta.value);
+}
+
+function idlarInitAcc(idx) {
+  const ta = document.getElementById("idlar-acc-" + idx);
+  if (!ta || ta.value.trim()) return;
+  ta.value = BULLET;
+  ta.selectionStart = ta.selectionEnd = BULLET.length;
+  idlarSetRow(idx, 'accomplishments', ta.value);
+}
+
+function idlarAccInput(e, idx) {
+  const ta = e.target;
+
+  if (!ta.value.trim()) {
+    ta.value = BULLET;
+    ta.selectionStart = ta.selectionEnd = BULLET.length;
+    idlarSetRow(idx, 'accomplishments', ta.value);
+    return;
+  }
+
+  // Auto-capitalize first letter after bullet or sub-item prefix
+  const pos = ta.selectionStart;
+  const lines = ta.value.split("\n");
+  let changed = false;
+  const newLines = lines.map(line => {
+    for (const prefix of [BULLET, SUBBULLET]) {
+      if (line.startsWith(prefix)) {
+        const rest = line.slice(prefix.length);
+        if (rest.length > 0 && rest[0] !== rest[0].toUpperCase() && /[a-z]/.test(rest[0])) {
+          changed = true;
+          return prefix + rest[0].toUpperCase() + rest.slice(1);
+        }
+        return line;
+      }
+    }
+    return line;
+  });
+
+  if (changed) {
+    ta.value = newLines.join("\n");
+    ta.selectionStart = ta.selectionEnd = pos;
+  }
+
+  idlarSetRow(idx, 'accomplishments', ta.value);
+}
+
+// ---- INIT ----
+window.onload = function() {
+  loadAll();
+  renderDayCards();
+  idlarLoadAll();
+  idlarRenderRows();
+  // Show landing screen, hide app
+  document.getElementById("employment-screen").style.display = "flex";
+  document.getElementById("tabs-wrapper").style.display = "none";
+};
+
+// ================================================================
+// IDLAR — Individual Daily Log and Accomplishment Report
+// ================================================================
+
+let idlarRows = [{ date: "", timeIn: "", timeOut: "", accomplishments: "" }];
+let idlarSaved = [];
+let idlarCurrentKey = null;
+
+function idlarLoadAll() {
+  try { idlarSaved = JSON.parse(localStorage.getItem(getIdlarKey("saved")) || "[]"); } catch(e) { idlarSaved = []; }
+  try { idlarRows = JSON.parse(localStorage.getItem(getIdlarKey("draft_rows")) || "null") || [{ date: "", timeIn: "", timeOut: "", accomplishments: "" }]; } catch(e) { idlarRows = [{ date: "", timeIn: "", timeOut: "", accomplishments: "" }]; }
+  const fields = ["name","position","division","bureau","period","submittedBy","attestedBy","submittedTitle","attestedTitle","submittedUnit","attestedUnit","submittedDate","attestedDate"];
+  fields.forEach(f => {
+    const val = localStorage.getItem(getIdlarKey(f));
+    if (val !== null) { const el = document.getElementById("idlar-" + f); if (el) el.value = val; }
+  });
+}
+
+function idlarPersist() {
+  localStorage.setItem(getIdlarKey("saved"), JSON.stringify(idlarSaved));
+  localStorage.setItem(getIdlarKey("draft_rows"), JSON.stringify(idlarRows));
+  const fields = ["name","position","division","bureau","period","submittedBy","attestedBy","submittedTitle","attestedTitle","submittedUnit","attestedUnit","submittedDate","attestedDate"];
+  fields.forEach(f => {
+    const el = document.getElementById("idlar-" + f);
+    if (el) localStorage.setItem(getIdlarKey(f), el.value);
+  });
+}
+
+function idlarGetInfo() {
+  const g = id => document.getElementById(id)?.value || "";
+  return {
+    name: g("idlar-name"), position: g("idlar-position"), division: g("idlar-division"),
+    bureau: g("idlar-bureau"), period: g("idlar-period"),
+    submittedBy: g("idlar-submittedBy"), attestedBy: g("idlar-attestedBy"),
+    submittedTitle: g("idlar-submittedTitle"), attestedTitle: g("idlar-attestedTitle"),
+    submittedUnit: g("idlar-submittedUnit"), attestedUnit: g("idlar-attestedUnit"),
+    submittedDate: g("idlar-submittedDate"), attestedDate: g("idlar-attestedDate"),
+  };
+}
+
+function idlarOnChange() { idlarPersist(); }
+
+function idlarOnNameChange() {
+  const nameVal = document.getElementById("idlar-name").value;
+  const subBy = document.getElementById("idlar-submittedBy");
+  if (!subBy.dataset.manuallyEdited) {
+    subBy.value = nameVal;
+  }
+  idlarPersist();
+}
+
+function idlarOnPositionChange() {
+  const posVal = document.getElementById("idlar-position").value;
+  const subTitle = document.getElementById("idlar-submittedTitle");
+  if (!subTitle.dataset.manuallyEdited) {
+    subTitle.value = posVal;
+  }
+  idlarPersist();
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  const subBy = document.getElementById("idlar-submittedBy");
+  if (subBy) {
+    subBy.addEventListener("input", function() {
+      const nameVal = document.getElementById("idlar-name").value;
+      if (this.value !== nameVal) {
+        this.dataset.manuallyEdited = "1";
+      } else {
+        delete this.dataset.manuallyEdited;
+      }
+      idlarPersist();
+    });
+  }
+  const subTitle = document.getElementById("idlar-submittedTitle");
+  if (subTitle) {
+    subTitle.addEventListener("input", function() {
+      const posVal = document.getElementById("idlar-position").value;
+      if (this.value !== posVal) {
+        this.dataset.manuallyEdited = "1";
+      } else {
+        delete this.dataset.manuallyEdited;
+      }
+      idlarPersist();
+    });
+  }
+});
+
+function idlarPeriodDateRange(periodStr) {
+  if (!periodStr) return { min: "", max: "" };
+  const m = periodStr.match(/^(\w+)\s+(\d+)-(\d+),\s+(\d+)$/);
+  if (!m) return { min: "", max: "" };
+  const monthIdx = MONTH_NAMES.indexOf(m[1]);
+  const year = parseInt(m[4]);
+  const startDay = parseInt(m[2]);
+  const endDay = parseInt(m[3]);
+  const pad = n => String(n).padStart(2, "0");
+  const min = `${year}-${pad(monthIdx + 1)}-${pad(startDay)}`;
+  const max = `${year}-${pad(monthIdx + 1)}-${pad(endDay)}`;
+  return { min, max };
+}
+
+function idlarGetDarDayMap(period) {
+  // Returns a map of { dateStr: { type, accomplishments } } for ALL days in the DAR for the given period
+  const report = savedReports.find(r => r.period === period);
+  if (!report) return {};
+  const map = {};
+  report.days.forEach(d => {
+    map[d.date] = { type: d.type, accomplishments: d.accomplishments || "" };
+  });
+  return map;
+}
+
+// Keep old name as alias for idlarBuildHTML usage
+function idlarGetDarAbsentDates(period) {
+  const map = {};
+  const full = idlarGetDarDayMap(period);
+  Object.keys(full).forEach(date => {
+    if (full[date].type !== "regular") map[date] = full[date].type;
+  });
+  return map;
+}
+
+function idlarRenderRows(errorIndices = []) {
+  const container = document.getElementById("idlar-rows");
+  if (!container) return;
+  const period = document.getElementById("idlar-period")?.value || "";
+  const darMap = idlarGetDarDayMap(period);
+  const { min: dateMin, max: dateMax } = idlarPeriodDateRange(period);
+
+  container.innerHTML = idlarRows.map((row, i) => {
+    const darDay = row.date ? darMap[row.date] : null;
+    const darType = darDay ? darDay.type : null;
+    const isBlocked = darType && darType !== "regular";
+    const typeLabel = darType === "absent" ? "ABSENT" : darType === "wellness" ? (currentEmploymentType === "regular" ? getLeaveLabel(darDay?.leaveType, true) : "WELLNESS LEAVE") : darType === "holiday" ? "HOLIDAY" : "";
+    const typeColor = darType === "absent" ? "#92400e" : darType === "wellness" ? "#065f46" : "#5b21b6";
+    const typeBg   = darType === "absent" ? "#fef3c7" : darType === "wellness" ? "#d1fae5" : "#f3e8ff";
+
+    const isRegular = currentEmploymentType === "regular";
+    const rowDayType = row.dayType || "regular"; // "regular" | "leave" | "holiday"
+
+    const hasError = errorIndices.includes(i);
+    const borderColor = hasError ? "#dc2626" : isBlocked ? typeColor : rowDayType === "leave" ? "#059669" : rowDayType === "holiday" ? "#7c3aed" : "#e2e8f0";
+    const bgColor = hasError ? "#fef2f2" : isBlocked ? typeBg : rowDayType === "leave" ? "#f0fdf4" : rowDayType === "holiday" ? "#faf5ff" : "#f8fafc";
+
+    const darAcc = darDay && darType === "regular" ? darDay.accomplishments : "";
+    const accValue = row.accomplishments || darAcc;
+    const isReflected = !row.accomplishments && darAcc;
+
+    const missingDate = hasError && !row.date;
+    const missingTimeIn = hasError && !row.timeIn && rowDayType === "regular";
+    const missingTimeOut = hasError && !row.timeOut && rowDayType === "regular";
+
+    // Leave type dropdown
+    const leaveTypeOptions = [
+      { key: "vacation",     label: "Vacation Leave" },
+      { key: "mandatory",    label: "Mandatory / Forced Leave" },
+      { key: "sick",         label: "Sick Leave" },
+      { key: "maternity",    label: "Maternity Leave" },
+      { key: "paternity",    label: "Paternity Leave" },
+      { key: "special_priv", label: "Special Privilege Leave" },
+      { key: "solo_parent",  label: "Solo Parent Leave" },
+      { key: "study",        label: "Study Leave" },
+      { key: "vawc",         label: "10-Day VAWC Leave" },
+      { key: "rehab",        label: "Rehabilitation Privilege" },
+      { key: "slb_women",    label: "Special Leave Benefits for Women" },
+      { key: "calamity",     label: "Special Emergency (Calamity) Leave" },
+      { key: "adoption",     label: "Adoption Leave" },
+      { key: "wellness",     label: "Wellness Leave" },
+    ];
+
+    const dayTypeBtns = isRegular && !isBlocked ? `
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center;">
+        <span style="font-size:12px;color:#475569;font-weight:600;">Tag as:</span>
+        <span onclick="idlarSetRowDayType(${i},'regular')"
+          style="padding:4px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:2px solid ${rowDayType==='regular'?'#1a56db':'#cbd5e1'};background:${rowDayType==='regular'?'#eff6ff':'#f8fafc'};color:${rowDayType==='regular'?'#1e3a8a':'#475569'};">
+          Regular
+        </span>
+        <span onclick="idlarSetRowDayType(${i},'leave')"
+          style="padding:4px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:2px solid ${rowDayType==='leave'?'#059669':'#cbd5e1'};background:${rowDayType==='leave'?'#d1fae5':'#f8fafc'};color:${rowDayType==='leave'?'#065f46':'#475569'};">
+          Leave
+        </span>
+        <span onclick="idlarSetRowDayType(${i},'holiday')"
+          style="padding:4px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:2px solid ${rowDayType==='holiday'?'#7c3aed':'#cbd5e1'};background:${rowDayType==='holiday'?'#f3e8ff':'#f8fafc'};color:${rowDayType==='holiday'?'#5b21b6':'#475569'};">
+          Holiday
+        </span>
+        ${rowDayType === "leave" ? `
+        <select style="margin-left:4px;font-size:12px;border:1.5px solid #059669;border-radius:6px;padding:4px 8px;background:#f0fdf4;color:#065f46;font-weight:600;" onchange="idlarSetRow(${i},'leaveType',this.value)">
+          <option value="">— Select Leave Type —</option>
+          ${leaveTypeOptions.map(lt => `<option value="${lt.key}"${row.leaveType === lt.key ? " selected" : ""}>${lt.label}</option>`).join("")}
+        </select>` : ""}
+      </div>` : "";
+
+    const showAcc = !isBlocked && rowDayType === "regular";
+    const showLeaveMsg = !isBlocked && rowDayType === "leave";
+    const showHolidayMsg = !isBlocked && rowDayType === "holiday";
+
+    return `
+    <div style="background:${bgColor};border:1.5px solid ${borderColor};border-radius:8px;padding:14px 16px;margin-bottom:10px;">
+      ${hasError ? `<div style="font-size:12px;color:#dc2626;font-weight:600;margin-bottom:8px;">⚠️ Please fill in all required fields for this entry.</div>` : ""}
+      <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
+        <div style="flex:1;min-width:130px;">
+          <label class="lbl" style="${missingDate ? 'color:#dc2626;' : ''}">Date${missingDate ? ' *' : ''}</label>
+          <input type="date" value="${row.date}" onchange="idlarSetRow(${i},'date',this.value)" style="width:100%;border-color:${missingDate ? '#dc2626' : ''};" ${dateMin ? `min="${dateMin}" max="${dateMax}"` : ""} />
+        </div>
+        <div style="flex:1;min-width:120px;">
+          <label class="lbl" style="${missingTimeIn ? 'color:#dc2626;' : ''}">Time In${missingTimeIn ? ' *' : ''}</label>
+          <input type="time" value="${row.timeIn}" onchange="idlarSetRow(${i},'timeIn',this.value)" style="width:100%;border-color:${missingTimeIn ? '#dc2626' : ''};" ${(isBlocked || rowDayType !== "regular") ? "disabled" : ""} />
+        </div>
+        <div style="flex:1;min-width:120px;">
+          <label class="lbl" style="${missingTimeOut ? 'color:#dc2626;' : ''}">Time Out${missingTimeOut ? ' *' : ''}</label>
+          <input type="time" value="${row.timeOut}" onchange="idlarSetRow(${i},'timeOut',this.value)" style="width:100%;border-color:${missingTimeOut ? '#dc2626' : ''};" ${(isBlocked || rowDayType !== "regular") ? "disabled" : ""} />
+        </div>
+        <div style="display:flex;align-items:flex-end;padding-bottom:2px;">
+          <button class="btn btn-danger" style="padding:7px 12px;font-size:12px;" onclick="idlarRemoveRow(${i})">✕</button>
+        </div>
+      </div>
+      ${dayTypeBtns}
+      ${isBlocked
+        ? `<div style="margin-top:10px;padding:8px 12px;background:${typeBg};border:1px solid ${typeColor};border-radius:6px;font-weight:700;color:${typeColor};font-size:13px;text-align:left;">
+             ⚠️ This day is tagged as <strong>${typeLabel}</strong> in the DAR. No log entry allowed.
+           </div>`
+        : showLeaveMsg
+          ? `<div style="margin-top:8px;padding:8px 12px;background:#d1fae5;border:1px solid #059669;border-radius:6px;font-weight:600;color:#065f46;font-size:13px;">
+               ${row.leaveType ? "🌿 " + getLeaveLabel(row.leaveType) : "🌿 Leave — please select leave type above."}
+             </div>`
+          : showHolidayMsg
+            ? `<div style="margin-top:8px;padding:8px 12px;background:#f3e8ff;border:1px solid #7c3aed;border-radius:6px;font-weight:600;color:#5b21b6;font-size:13px;">
+                 🎌 Holiday
+               </div>`
+            : `<div style="margin-top:10px;">
+                 <label class="lbl">Actual Accomplishments${isReflected ? ' <span style="font-weight:400;color:#1a56db;font-size:11px;">(reflected from DAR)</span>' : ''}</label>
+                 <textarea class="acc-textarea" id="idlar-acc-${i}"
+                   onkeydown="accKeydown(event,'idlar',${i})"
+                   oninput="idlarAccInput(event,${i})"
+                   onfocus="idlarInitAcc(${i})"
+                   style="border:1.5px solid ${isReflected ? '#93c5fd' : '#cbd5e1'};background:${isReflected ? '#eff6ff' : '#fff'};"
+                 >${escapeHtml(accValue)}</textarea>
+                 <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Enter → new bullet &nbsp;|&nbsp; Tab → indent as sub-item &nbsp;|&nbsp; Shift+Tab → promote back</div>
+               </div>`
+      }
+    </div>`;
+  }).join("");
+}
+
+function idlarSetRowDayType(i, dayType) {
+  idlarRows[i].dayType = dayType;
+  if (dayType !== "leave") idlarRows[i].leaveType = null;
+  if (dayType !== "regular") {
+    idlarRows[i].timeIn = "";
+    idlarRows[i].timeOut = "";
+  }
+  idlarRenderRows();
+  idlarPersist();
+}
+
+function idlarSetRow(i, field, val) {
+  idlarRows[i][field] = val;
+  // Clear error state whenever user makes a change
+  const errorEl = document.getElementById("idlar-save-error");
+  if (errorEl) errorEl.style.display = "none";
+  // Re-render to apply/remove absent blocking (date change) or clear red highlights
+  idlarRenderRows();
+  idlarPersist();
+}
+
+function idlarOnPeriodChange() {
+  idlarOnChange();
+  const period = document.getElementById("idlar-period")?.value || "";
+  if (period) {
+    // Check if there's already saved data for this period
+    const existing = idlarSaved.find(s => s.key === period);
+    if (existing) {
+      // Load the saved rows for this period
+      idlarRows = JSON.parse(JSON.stringify(existing.rows));
+    } else {
+      // Clear entries — fresh start for this period
+      idlarRows = [{ date: "", timeIn: "", timeOut: "", accomplishments: "", dayType: "regular", leaveType: null }];
+    }
+  }
+  idlarCheckPeriod();
+  idlarRenderRows();
+  idlarPersist();
+}
+
+function idlarCheckPeriod() {
+  const period = document.getElementById("idlar-period")?.value || "";
+  const noMsg  = document.getElementById("idlar-no-period-msg");
+  const logBody = document.getElementById("idlar-log-body");
+  if (period) {
+    if (noMsg)  noMsg.style.display  = "none";
+    if (logBody) logBody.style.display = "block";
+  } else {
+    if (noMsg)  noMsg.style.display  = "block";
+    if (logBody) logBody.style.display = "none";
+  }
+}
+
+function idlarAddRow() {
+  const period = document.getElementById("idlar-period")?.value || "";
+  if (!period) {
+    alert("Please select a Date/s Covered period first.");
+    return;
+  }
+  idlarRows.push({ date: "", timeIn: "", timeOut: "", accomplishments: "", dayType: "regular", leaveType: null });
+  idlarRenderRows();
+  idlarPersist();
+}
+
+function idlarConfirmClear() {
+  document.getElementById("idlar-confirm-clear").style.display = "flex";
+}
+
+function idlarClearAll() {
+  idlarRows = [{ date: "", timeIn: "", timeOut: "", accomplishments: "" }];
+  document.getElementById("idlar-confirm-clear").style.display = "none";
+  const errorEl = document.getElementById("idlar-save-error");
+  if (errorEl) errorEl.style.display = "none";
+  idlarRenderRows();
+  idlarPersist();
+}
+
+function idlarRemoveRow(i) {
+  idlarRows.splice(i, 1);
+  if (idlarRows.length === 0) idlarRows.push({ date: "", timeIn: "", timeOut: "", accomplishments: "" });
+  idlarRenderRows();
+  idlarPersist();
+}
+
+function idlarSave() {
+  const info = idlarGetInfo();
+  const errorEl = document.getElementById("idlar-save-error");
+
+  if (!info.period) {
+    errorEl.style.display = "block";
+    errorEl.innerHTML = "⚠️ Please select a <strong>Date/s Covered</strong> period before saving.";
+    errorEl.scrollIntoView({ behavior: "smooth", block: "center" });
+    return;
+  }
+
+  // Validate all rows: each must have date, time in, and time out (skip blocked rows)
+  const darMap = idlarGetDarDayMap(info.period);
+  const incompleteIndices = [];
+  idlarRows.forEach((row, i) => {
+    const darType = row.date ? darMap[row.date]?.type : null;
+    const isBlocked = darType && darType !== "regular";
+    if (isBlocked) return;
+    const rowDayType = row.dayType || "regular";
+    const needsTime = currentEmploymentType !== "regular" || rowDayType === "regular";
+    if (!row.date || (needsTime && (!row.timeIn || !row.timeOut))) incompleteIndices.push(i + 1);
+  });
+
+  if (incompleteIndices.length > 0) {
+    const missing = idlarRows.map((row, i) => {
+      const darType = row.date ? darMap[row.date]?.type : null;
+      const isBlocked = darType && darType !== "regular";
+      if (isBlocked) return null;
+      const rowDayType = row.dayType || "regular";
+      const needsTime = currentEmploymentType !== "regular" || rowDayType === "regular";
+      const miss = [];
+      if (!row.date) miss.push("Date");
+      if (needsTime && !row.timeIn) miss.push("Time In");
+      if (needsTime && !row.timeOut) miss.push("Time Out");
+      if (miss.length === 0) return null;
+      return `Row ${i + 1}: missing ${miss.join(", ")}`;
+    }).filter(Boolean);
+
+    errorEl.style.display = "block";
+    errorEl.innerHTML = `⚠️ Please complete the following before saving:<br/><ul style="margin:6px 0 0 18px;font-weight:400;">${missing.map(m => `<li>${m}</li>`).join("")}</ul>`;
+    errorEl.scrollIntoView({ behavior: "smooth", block: "center" });
+    // Re-render rows to highlight the incomplete ones
+    idlarRenderRows(incompleteIndices.map(n => n - 1));
+    return;
+  }
+
+  // All good — clear error and save
+  errorEl.style.display = "none";
+  const key = info.period;
+  idlarSaved = idlarSaved.filter(s => s.key !== key);
+  idlarSaved.push({ key, info, rows: JSON.parse(JSON.stringify(idlarRows)), savedAt: new Date().toISOString() });
+  idlarCurrentKey = key;
+  idlarPersist();
+  showToast("✅ IDLAR saved!");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function idlarDelete(i) {
+  if (!confirm(`Delete IDLAR for "${idlarSaved[i].info.period}"? This cannot be undone.`)) return;
+  idlarSaved.splice(i, 1);
+  idlarPersist();
+  showToast("🗑 IDLAR deleted.");
+}
+
+function idlarEdit(i) {
+  const s = idlarSaved[i];
+  idlarRows = JSON.parse(JSON.stringify(s.rows));
+  const fields = ["name","position","division","bureau","period","submittedBy","attestedBy","submittedTitle","attestedTitle","submittedDate","attestedDate"];
+  fields.forEach(f => { const el = document.getElementById("idlar-" + f); if (el) el.value = s.info[f] || ""; });
+  switchTab("entry");
+  switchReportType("idlar");
+  idlarRenderRows();
+  idlarPersist();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function idlarFmtTime(t) {
+  if (!t) return "";
+  const [h, m] = t.split(":").map(Number);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2,"0")} ${ampm}`;
+}
+
+function idlarFmtDate(d) {
+  if (!d) return "";
+  const dt = new Date(d + "T00:00:00");
+  return dt.toLocaleDateString("en-PH", { month:"2-digit", day:"2-digit", year:"numeric" });
+}
+
+function idlarBuildHTML(s) {
+  const { info, rows } = s;
+  const subDate = info.submittedDate ? formatDateShort(info.submittedDate) : "";
+  const attDate = info.attestedDate ? formatDateShort(info.attestedDate) : "";
+  const darMap = idlarGetDarDayMap(info.period);
+  const tableRows = rows.map(row => {
+    const darDay = row.date ? darMap[row.date] : null;
+    const darType = darDay ? darDay.type : null;
+    if (darType && darType !== "regular") {
+      const label = darType === "absent" ? "ABSENT" : darType === "wellness" ? (currentEmploymentType === "regular" ? getLeaveLabel(darDay?.leaveType, true) : "WELLNESS LEAVE") : "HOLIDAY";
+      return `<tr>
+        <td style="border:1px solid #000;padding:6px 10px;vertical-align:top;font-style:italic;line-height:1.15;mso-line-height-rule:exactly;width:30%;">
+          <p style="margin:0;line-height:1;mso-line-height-rule:exactly;font-style:italic;">${escapeHtml(idlarFmtDate(row.date))}</p>
+        </td>
+        <td style="border:1px solid #000;padding:6px 10px;vertical-align:top;text-align:left;font-weight:bold;">${label}</td>
+      </tr>`;
+    }
+    // Regular employment type — check row-level dayType
+    const rowDayType = row.dayType || "regular";
+    if (currentEmploymentType === "regular" && rowDayType === "leave") {
+      const label = row.leaveType ? getLeaveLabel(row.leaveType, true) : "LEAVE";
+      return `<tr>
+        <td style="border:1px solid #000;padding:6px 10px;vertical-align:top;font-style:italic;line-height:1.15;mso-line-height-rule:exactly;width:30%;">
+          <p style="margin:0;line-height:1;mso-line-height-rule:exactly;font-style:italic;">${escapeHtml(idlarFmtDate(row.date))}</p>
+        </td>
+        <td style="border:1px solid #000;padding:6px 10px;vertical-align:top;text-align:left;font-weight:bold;">${label}</td>
+      </tr>`;
+    }
+    if (currentEmploymentType === "regular" && rowDayType === "holiday") {
+      return `<tr>
+        <td style="border:1px solid #000;padding:6px 10px;vertical-align:top;font-style:italic;line-height:1.15;mso-line-height-rule:exactly;width:30%;">
+          <p style="margin:0;line-height:1;mso-line-height-rule:exactly;font-style:italic;">${escapeHtml(idlarFmtDate(row.date))}</p>
+        </td>
+        <td style="border:1px solid #000;padding:6px 10px;vertical-align:top;text-align:left;font-weight:bold;">HOLIDAY</td>
+      </tr>`;
+    }
+    // Use row's own accomplishments, or fall back to DAR accomplishments
+    const accText = row.accomplishments || (darDay ? darDay.accomplishments : "") || "";
+    const acc = accText.split("\n").filter(l => l.trim()).map(l => `<p style="margin:0;line-height:1;mso-line-height-rule:exactly;">• ${escapeHtml(l.replace(/^[•\-]\s*/,""))}</p>`).join("") || `<p style="margin:0;line-height:1;mso-line-height-rule:exactly;">•</p>`;
+    return `<tr>
+      <td style="border:1px solid #000;padding:6px 10px;vertical-align:top;width:30%;">
+        <p style="margin:0;line-height:1;mso-line-height-rule:exactly;font-style:italic;">${escapeHtml(idlarFmtDate(row.date))}</p>
+        <p style="margin:0;line-height:1;mso-line-height-rule:exactly;font-style:italic;">Time in : ${escapeHtml(idlarFmtTime(row.timeIn))}</p>
+        <p style="margin:0;line-height:1;mso-line-height-rule:exactly;font-style:italic;">Time out : ${escapeHtml(idlarFmtTime(row.timeOut))}</p>
+      </td>
+      <td style="border:1px solid #000;padding:6px 10px;vertical-align:top;">${acc}</td>
+    </tr>`;
+  }).join("");
+
+  return `<div style="font-family:'Times New Roman',Times,serif;font-size:11pt;color:#000;max-width:720px;margin:0 auto;">
+    <p style="text-align:right;font-style:italic;margin:0 0 12px 0;line-height:1;mso-line-height-rule:exactly;">Annex D</p>
+    <p style="text-align:center;font-weight:bold;font-size:13pt;margin:0;line-height:1;mso-line-height-rule:exactly;">INDIVIDUAL DAILY LOG AND ACCOMPLISHMENT REPORT</p>
+    <p style="text-align:center;font-weight:bold;font-size:11pt;margin:0 0 16px 0;line-height:1;mso-line-height-rule:exactly;">(WORK FROM HOME)</p>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:14px;">
+      <tr><td style="width:28%;padding:1px 0;font-weight:bold;font-size:10.5pt;line-height:1;mso-line-height-rule:exactly;white-space:nowrap;">NAME</td><td style="width:2%;padding:1px 0;font-weight:bold;">:</td><td style="padding:1px 0;font-weight:bold;font-size:10.5pt;line-height:1;mso-line-height-rule:exactly;">${escapeHtml(info.name)}</td></tr>
+      <tr><td style="padding:1px 0;font-weight:bold;font-size:10.5pt;line-height:1;mso-line-height-rule:exactly;white-space:nowrap;">POSITION</td><td style="padding:1px 0;font-weight:bold;">:</td><td style="padding:1px 0;font-size:10.5pt;line-height:1;mso-line-height-rule:exactly;">${escapeHtml(info.position)}</td></tr>
+      <tr><td style="padding:1px 0;font-weight:bold;font-size:10.5pt;line-height:1;mso-line-height-rule:exactly;white-space:nowrap;">DIVISION</td><td style="padding:1px 0;font-weight:bold;">:</td><td style="padding:1px 0;font-size:10.5pt;line-height:1;mso-line-height-rule:exactly;">${escapeHtml(info.division)}</td></tr>
+      <tr><td style="padding:1px 0;font-weight:bold;font-size:10.5pt;line-height:1;mso-line-height-rule:exactly;white-space:nowrap;">BUREAU/SERVICE</td><td style="padding:1px 0;font-weight:bold;">:</td><td style="padding:1px 0;font-size:10.5pt;line-height:1;mso-line-height-rule:exactly;">${escapeHtml(info.bureau)}</td></tr>
+      <tr><td style="padding:1px 0;font-weight:bold;font-size:10.5pt;line-height:1;mso-line-height-rule:exactly;white-space:nowrap;">DATE/S COVERED</td><td style="padding:1px 0;font-weight:bold;">:</td><td style="padding:1px 0;font-size:10.5pt;line-height:1;mso-line-height-rule:exactly;">${escapeHtml(info.period)}</td></tr>
+    </table>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+      <thead>
+        <tr>
+          <th style="border:1px solid #000;padding:6px 8px;text-align:center;width:30%;font-weight:bold;line-height:1;mso-line-height-rule:exactly;">Date and Actual<br/>Time logs</th>
+          <th style="border:1px solid #000;padding:6px 8px;text-align:center;font-weight:bold;line-height:1;mso-line-height-rule:exactly;">Actual Accomplishments</th>
+        </tr>
+      </thead>
+      <tbody>${tableRows}</tbody>
+    </table>
+    <table class="signatory-table" style="width:100%;border-collapse:collapse;page-break-inside:avoid;break-inside:avoid;">
+      <tr>
+        <td style="width:46%;padding:4px 0;vertical-align:top;">
+          <p style="margin:0 0 36px 0;line-height:1;mso-line-height-rule:exactly;">Submitted by:</p>
+          <div style="border-top:1px solid #000;padding-top:3px;">
+            <p style="margin:0;line-height:1;mso-line-height-rule:exactly;font-weight:bold;">${escapeHtml(info.submittedBy)}</p>
+            <p style="margin:0;line-height:1;mso-line-height-rule:exactly;font-style:italic;">${escapeHtml(info.submittedTitle)}</p>
+            <p style="margin:0;line-height:1;mso-line-height-rule:exactly;">${escapeHtml(info.submittedUnit)}</p>
+            <p style="margin:0;line-height:1;mso-line-height-rule:exactly;font-weight:bold;">Date: &nbsp;${subDate ? escapeHtml(subDate) : "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"}</p>
+          </div>
+        </td>
+        <td style="width:8%;"></td>
+        <td style="width:46%;padding:4px 0;vertical-align:top;">
+          <p style="margin:0 0 36px 0;line-height:1;mso-line-height-rule:exactly;">Attested by:</p>
+          <div style="border-top:1px solid #000;padding-top:3px;">
+            <p style="margin:0;line-height:1;mso-line-height-rule:exactly;font-weight:bold;">${escapeHtml(info.attestedBy)}</p>
+            <p style="margin:0;line-height:1;mso-line-height-rule:exactly;font-style:italic;">${escapeHtml(info.attestedTitle).replace(/\n/g,"<br/>")}</p>
+            <p style="margin:0;line-height:1;mso-line-height-rule:exactly;">${escapeHtml(info.attestedUnit)}</p>
+            <p style="margin:0;line-height:1;mso-line-height-rule:exactly;font-weight:bold;">Date: &nbsp;${attDate ? escapeHtml(attDate) : "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"}</p>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>`;
+}
+
+function idlarPreview(i) {
+  const s = idlarSaved[i];
+  const card = document.getElementById("idlar-preview-card");
+  document.getElementById("idlar-preview-content").innerHTML = idlarBuildHTML(s);
+  card.style.display = "block";
+  // Make sure we're on the dashboard tab
+  switchTab("dashboard");
+  setTimeout(() => card.scrollIntoView({ behavior: "smooth" }), 100);
+}
+
+function idlarPrint() {
+  const content = document.getElementById("idlar-preview-content")?.innerHTML;
+  if (!content) { alert("Please preview an IDLAR first."); return; }
+  const period = document.getElementById("idlar-preview-content").querySelector("td:last-child") ? "" : "";
+  // Get period from saved
+  const nameEl = document.getElementById("idlar-period");
+  const periodVal = nameEl?.value || "IDLAR";
+  const orig = document.title;
+  document.title = `Individual Daily Log and Accomplishment Report - ${periodVal}`;
+  const printDiv = document.getElementById("print-area");
+  printDiv.innerHTML = `<div style="font-family:'Times New Roman',Times,serif;">${content}</div>`;
+  window.print();
+  document.title = orig;
+  printDiv.innerHTML = "";
+}
+
+function idlarSaveWord() {
+  const previewed = document.getElementById("idlar-preview-content")?.innerHTML;
+  if (!previewed) { alert("Please preview an IDLAR first."); return; }
+  const periodVal = document.getElementById("idlar-period")?.value || "IDLAR";
+  idlarExportWord(previewed, periodVal);
+}
+
+function idlarSaveWordForEntry(s) {
+  const html = idlarBuildHTML(s);
+  idlarExportWord(html, s.info.period || "IDLAR");
+}
+
+function idlarExportWord(html, periodVal) {
+  const wordHtml = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+  <head><meta charset='utf-8'/><title>IDLAR</title>
+  <style>
+    body { font-family: 'Times New Roman', Times, serif; font-size: 11pt; line-height: 1; mso-line-height-rule: exactly; }
+    p { margin: 0; padding: 0; line-height: 1; mso-line-height-rule: exactly; }
+    div { line-height: 1; mso-line-height-rule: exactly; }
+    table { border-collapse: collapse; width: 100%; }
+    td, th { font-family: 'Times New Roman', Times, serif; font-size: 11pt; line-height: 1; mso-line-height-rule: exactly; }
+    .signatory-table { page-break-inside: avoid; }
+    @page { margin: 1in; size: Letter; }
+    @page WordSection1 { size: Letter; margin: 1in; mso-line-height-rule: exactly; }
+    div.WordSection1 { page: WordSection1; }
+  </style>
+  <xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom>
+    <w:DoNotOptimizeForBrowser/>
+    <w:DocumentKind>DocumentNotSpecified</w:DocumentKind>
+    <w:DefaultTabStop>720</w:DefaultTabStop>
+    <w:SpacingInWholePoints/>
+  </w:WordDocument></xml>
+  </head><body><div class="WordSection1">${html}</div></body></html>`;
+  const blob = new Blob([wordHtml], { type: "application/msword" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `Individual Daily Log and Accomplishment Report - ${periodVal}.doc`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+</script>
+</body>
+</html>
